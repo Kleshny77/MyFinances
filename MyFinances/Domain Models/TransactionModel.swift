@@ -7,15 +7,15 @@
 
 import Foundation
 
-struct Transaction {
-    let id: Int
-    let accountId: Int
-    let categoryId: Int
-    let amount: Decimal
-    let transactionDate: Date
-    let comment: String?
-    let createdAt: Date
-    let updatedAt: Date
+struct Transaction: Codable {
+    var id: Int
+    var accountId: Int
+    var categoryId: Int
+    var amount: Decimal
+    var transactionDate: Date
+    var comment: String?
+    var createdAt: Date
+    var updatedAt: Date
 }
 
 extension Transaction {
