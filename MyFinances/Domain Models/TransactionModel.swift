@@ -13,7 +13,7 @@ struct Transaction {
     let categoryId: Int
     let amount: Decimal
     let transactionDate: Date
-    let comment: String
+    let comment: String?
     let createdAt: Date
     let updatedAt: Date
 }
@@ -22,16 +22,18 @@ extension Transaction {
     private static let formatter = ISO8601DateFormatter()
     
     var jsonObject: Any {
-        return [
-                "id": id,
-                "accountId": accountId,
-                "categoryId": categoryId,
-                "amount": String(describing: amount),
-                "transactionDate": Self.formatter.string(from: transactionDate),
-                "comment": comment,
-                "createdAt": Self.formatter.string(from: createdAt),
-                "updatedAt": Self.formatter.string(from: updatedAt)
-            ]
+        let json: [String : Any] = [
+            "id": id,
+            "accountId": accountId,
+            "categoryId": categoryId,
+            "amount": String(describing: amount),
+            "transactionDate": Self.formatter.string(from: transactionDate),
+            "comment": comment ?? NSNull(),
+            "createdAt": Self.formatter.string(from: createdAt),
+            "updatedAt": Self.formatter.string(from: updatedAt),
+        ]
+        
+        return json
     }
     
     static func parse(jsonObject: Any) -> Transaction? {
@@ -41,7 +43,7 @@ extension Transaction {
               let categoryId: Int = dict["categoryId"] as? Int,
               let amountDouble: String = dict["amount"] as? String,
               let transactionDateString: String = dict["transactionDate"] as? String,
-              let comment: String = dict["comment"] as? String,
+              let comment: String? = dict["comment"] as? String?,
               let createdAtString: String = dict["createdAt"] as? String,
               let updatedAtString: String = dict["updatedAt"] as? String
         else { return nil }
