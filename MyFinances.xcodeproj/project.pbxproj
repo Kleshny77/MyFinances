@@ -27,6 +27,7 @@
 		1E2170792DF345A40094E28D /* MyFinances.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyFinances.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1E2170862DF345A60094E28D /* MyFinancesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyFinancesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1E2170902DF345A60094E28D /* MyFinancesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyFinancesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1E4BB8D92DF44D8C00D606FD /* MyFinances.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = MyFinances.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -38,11 +39,6 @@
 		1E2170892DF345A60094E28D /* MyFinancesTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MyFinancesTests;
-			sourceTree = "<group>";
-		};
-		1E2170932DF345A60094E28D /* MyFinancesUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MyFinancesUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +71,9 @@
 		1E2170702DF345A40094E28D = {
 			isa = PBXGroup;
 			children = (
+				1E4BB8D92DF44D8C00D606FD /* MyFinances.xctestplan */,
 				1E21707B2DF345A40094E28D /* MyFinances */,
 				1E2170892DF345A60094E28D /* MyFinancesTests */,
-				1E2170932DF345A60094E28D /* MyFinancesUITests */,
 				1E21707A2DF345A40094E28D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -152,9 +148,6 @@
 			);
 			dependencies = (
 				1E2170922DF345A60094E28D /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				1E2170932DF345A60094E28D /* MyFinancesUITests */,
 			);
 			name = MyFinancesUITests;
 			packageProductDependencies = (
