@@ -21,6 +21,7 @@ struct CategoriesService {
     }
     
     func fetchCategories(direction: Direction) async throws -> [Category] {
+        // потом заменить на отдельный запрос в бд, не через fetchCategories()
         let categories = try await fetchCategories()
         
         switch direction {
