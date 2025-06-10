@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Модель банковского аккаунта
-struct BankAccount {
+struct BankAccount: Equatable {
     let id: Int
     let userId: Int
     let name: String

@@ -14,7 +14,7 @@ enum Direction {
 }
 
 // MARK: - Модель категории
-struct Category {
+struct Category: Equatable {
     let id: Int
     let name: String
     let emoji: Character
