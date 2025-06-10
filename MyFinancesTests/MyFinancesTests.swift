@@ -36,44 +36,104 @@ final class TransactionParseTests: XCTestCase {
     
     func testParse_MissingField() throws {
         jsonObject.removeValue(forKey: "accountId")
-        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        XCTAssertNil(transaction, "nil, так как нет обязательного поля")
+        XCTAssertThrowsError(try Transaction.parse(jsonObject: jsonObject)) { error in
+            guard let parseError = error as? ParseError else {
+                return XCTFail("Ошибка должна быть типа ParseError")
+            }
+            
+            switch parseError {
+            case .missingField(let field):
+                XCTAssertEqual(field, "accountId")
+            default:
+                XCTFail("Ожидался .missingField, получено: \(parseError)")
+            }
+        }
     }
     
     func testParse_InvalidAmount() throws {
         jsonObject["amount"] = "some string"
-        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        XCTAssertNil(transaction, "nil, так как amount не парсится")
+        XCTAssertThrowsError(try Transaction.parse(jsonObject: jsonObject)) { error in
+            guard let parseError = error as? ParseError else {
+                return XCTFail("Ошибка должна быть типа ParseError")
+            }
+            switch parseError {
+            case .invalidDecimal(let field, let value):
+                XCTAssertEqual(field, "amount")
+                XCTAssertEqual(value, "some string")
+            default:
+                XCTFail("Ожидался .invalidDecimal, получено: \(parseError)")
+            }
+        }
     }
     
     func testParse_EmptyStringAmount() throws {
         jsonObject["amount"] = ""
-        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        XCTAssertNil(transaction)
+        XCTAssertThrowsError(try Transaction.parse(jsonObject: jsonObject)) { error in
+            guard let parseError = error as? ParseError else {
+                return XCTFail("Ошибка должна быть типа ParseError")
+            }
+            switch parseError {
+            case .invalidDecimal(let field, let value):
+                XCTAssertEqual(field, "amount")
+                XCTAssertEqual(value, "")
+            default:
+                XCTFail("Ожидался .invalidDecimal, получено: \(parseError)")
+            }
+        }
     }
     
     func testParse_InvalidTransactionDate() throws {
         jsonObject["transactionDate"] = "202506-06T19:12:05Z"
-        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        XCTAssertNil(transaction, "nil, так как transactionDate не парсится")
+        XCTAssertThrowsError(try Transaction.parse(jsonObject: jsonObject)) { error in
+            guard let parseError = error as? ParseError else {
+                return XCTFail("Ошибка должна быть типа ParseError")
+            }
+            switch parseError {
+            case .invalidDate(let field, let value):
+                XCTAssertEqual(field, "transactionDate")
+                XCTAssertEqual(value, "202506-06T19:12:05Z")
+            default:
+                XCTFail("Ожидался .invalidDate, получено: \(parseError)")
+            }
+        }
     }
     
     func testParse_InvalidCreatedAt() throws {
         jsonObject["createdAt"] = "2025-06--06T19:12:05Z"
-        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        XCTAssertNil(transaction, "nil, так как createdAt не парсится")
+        XCTAssertThrowsError(try Transaction.parse(jsonObject: jsonObject)) { error in
+            guard let parseError = error as? ParseError else {
+                return XCTFail("Ошибка должна быть типа ParseError")
+            }
+            switch parseError {
+            case .invalidDate(let field, let value):
+                XCTAssertEqual(field, "createdAt")
+                XCTAssertEqual(value, "2025-06--06T19:12:05Z")
+            default:
+                XCTFail("Ожидался .invalidDate, получено: \(parseError)")
+            }
+        }
     }
     
     func testParse_InvalidUpdatedAt() throws {
         jsonObject["updatedAt"] = "some string"
-        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        XCTAssertNil(transaction, "nil, так как updatedAt не парсится")
+        XCTAssertThrowsError(try Transaction.parse(jsonObject: jsonObject)) { error in
+            guard let parseError = error as? ParseError else {
+                return XCTFail("Ошибка должна быть типа ParseError")
+            }
+            switch parseError {
+            case .invalidDate(let field, let value):
+                XCTAssertEqual(field, "updatedAt")
+                XCTAssertEqual(value, "some string")
+            default:
+                XCTFail("Ожидался .invalidDate, получено: \(parseError)")
+            }
+        }
     }
     
     func testParse_CommentIsNull() throws {
@@ -127,7 +187,7 @@ final class TransactionJsonObjectTests: XCTestCase {
         
         for (key, expectedValue) in expected {
             let actualValue = jsonObject[key]
-
+            
             switch expectedValue {
             case let int as Int:
                 XCTAssertEqual(actualValue as? Int, int)
@@ -144,7 +204,7 @@ final class TransactionJsonObjectTests: XCTestCase {
     func testJsonObject_CommentIsNil() {
         transaction.comment = nil
         let json = transaction.jsonObject
-
+        
         XCTAssertTrue(json["comment"] is NSNull, "comment должен быть NSNull, если был nil")
     }
     
