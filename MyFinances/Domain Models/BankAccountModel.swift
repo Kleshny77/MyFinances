@@ -7,6 +7,7 @@
 
 import Foundation
 
+// MARK: - Модель банковского аккаунта
 struct BankAccount {
     let id: Int
     let userId: Int

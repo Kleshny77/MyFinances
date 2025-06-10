@@ -24,94 +24,76 @@ final class TransactionParseTests: XCTestCase {
         ]
     }
     
-    func testParse_Normal() {
-        guard let transaction = Transaction.parse(jsonObject: jsonObject) else {
+    func testParse_Normal() throws {
+        guard let transaction = try Transaction.parse(jsonObject: jsonObject) else {
             XCTFail("Transaction не распарсился")
             return
         }
-        
         let expected = makeExpectedTransaction()
         
-        XCTAssertEqual(transaction.id, expected.id)
-        XCTAssertEqual(transaction.accountId, expected.accountId)
-        XCTAssertEqual(transaction.categoryId, expected.categoryId)
-        XCTAssertEqual(transaction.amount, expected.amount)
-        XCTAssertEqual(transaction.comment, expected.comment)
-        XCTAssertEqual(transaction.transactionDate, expected.transactionDate)
-        XCTAssertEqual(transaction.createdAt, expected.createdAt)
-        XCTAssertEqual(transaction.updatedAt, expected.updatedAt)
+        XCTAssertEqual(transaction, expected)
     }
     
-    func testParse_MissingField() {
+    func testParse_MissingField() throws {
         jsonObject.removeValue(forKey: "accountId")
-        
-        let transaction = Transaction.parse(jsonObject: jsonObject)
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
         XCTAssertNil(transaction, "nil, так как нет обязательного поля")
     }
     
-    func testParse_InvalidAmount() {
+    func testParse_InvalidAmount() throws {
         jsonObject["amount"] = "some string"
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        let transaction = Transaction.parse(jsonObject: jsonObject)
         XCTAssertNil(transaction, "nil, так как amount не парсится")
     }
     
-    func testParse_EmptyStringAmount() {
+    func testParse_EmptyStringAmount() throws {
         jsonObject["amount"] = ""
-        
-        let transaction = Transaction.parse(jsonObject: jsonObject)
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
         XCTAssertNil(transaction)
     }
     
-    func testParse_InvalidTransactionDate() {
+    func testParse_InvalidTransactionDate() throws {
         jsonObject["transactionDate"] = "202506-06T19:12:05Z"
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        let transaction = Transaction.parse(jsonObject: jsonObject)
         XCTAssertNil(transaction, "nil, так как transactionDate не парсится")
     }
     
-    func testParse_InvalidCreatedAt() {
+    func testParse_InvalidCreatedAt() throws {
         jsonObject["createdAt"] = "2025-06--06T19:12:05Z"
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        let transaction = Transaction.parse(jsonObject: jsonObject)
         XCTAssertNil(transaction, "nil, так как createdAt не парсится")
     }
     
-    func testParse_InvalidUpdatedAt() {
+    func testParse_InvalidUpdatedAt() throws {
         jsonObject["updatedAt"] = "some string"
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        let transaction = Transaction.parse(jsonObject: jsonObject)
         XCTAssertNil(transaction, "nil, так как updatedAt не парсится")
     }
     
-    func testParse_CommentIsNull() {
+    func testParse_CommentIsNull() throws {
         jsonObject["comment"] = nil
+        let transaction = try Transaction.parse(jsonObject: jsonObject)
         
-        let transaction = Transaction.parse(jsonObject: jsonObject)
         XCTAssertNotNil(transaction)
         XCTAssertNil(transaction?.comment)
     }
     
-    func testParse_ExtraFields() {
+    func testParse_ExtraFields() throws {
         jsonObject["someKey"] = "someString"
         
-        guard let transaction = Transaction.parse(jsonObject: jsonObject) else {
+        guard let transaction = try Transaction.parse(jsonObject: jsonObject) else {
             XCTFail("Transaction не распарсился")
             return
         }
-        
         let expected = makeExpectedTransaction()
         
-        XCTAssertEqual(transaction.id, expected.id)
-        XCTAssertEqual(transaction.accountId, expected.accountId)
-        XCTAssertEqual(transaction.categoryId, expected.categoryId)
-        XCTAssertEqual(transaction.amount, expected.amount)
-        XCTAssertEqual(transaction.comment, expected.comment)
-        XCTAssertEqual(transaction.transactionDate, expected.transactionDate)
-        XCTAssertEqual(transaction.createdAt, expected.createdAt)
-        XCTAssertEqual(transaction.updatedAt, expected.updatedAt)
+        XCTAssertEqual(transaction, expected)
     }
     
     private func makeExpectedTransaction() -> Transaction {
@@ -140,8 +122,7 @@ final class TransactionJsonObjectTests: XCTestCase {
     }
     
     func testJsonObject_Normal() {
-        let jsonObject = transaction.jsonObject as! [String: Any]
-        
+        let jsonObject = transaction.jsonObject
         let expected = makeExpectedJsonObject()
         
         for (key, expectedValue) in expected {
@@ -150,13 +131,10 @@ final class TransactionJsonObjectTests: XCTestCase {
             switch expectedValue {
             case let int as Int:
                 XCTAssertEqual(actualValue as? Int, int)
-
             case let str as String:
                 XCTAssertEqual(actualValue as? String, str)
-
             case _ as NSNull:
                 XCTAssertTrue(actualValue is NSNull)
-
             default:
                 XCTFail("Unexpected type for key: \(key)")
             }
@@ -165,8 +143,7 @@ final class TransactionJsonObjectTests: XCTestCase {
     
     func testJsonObject_CommentIsNil() {
         transaction.comment = nil
-
-        let json = transaction.jsonObject as! [String: Any]
+        let json = transaction.jsonObject
 
         XCTAssertTrue(json["comment"] is NSNull, "comment должен быть NSNull, если был nil")
     }

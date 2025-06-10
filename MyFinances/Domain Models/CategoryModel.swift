@@ -7,11 +7,13 @@
 
 import Foundation
 
+// MARK: - Статус операции
 enum Direction {
     case income
     case outcome
 }
 
+// MARK: - Модель категории
 struct Category {
     let id: Int
     let name: String
