@@ -7,6 +7,7 @@
 
 import Foundation
 
+// MARK: - Еще дописываю этот сервис
 struct CategoriesService {
     func fetchCategories() async throws -> [Category] {
         let categories = [
@@ -16,12 +17,25 @@ struct CategoriesService {
             Category(id: 4, name: "Еда", emoji: "🍕", isIncome: false),
             Category(id: 5, name: "Коммунальные услуги", emoji: "🔌", isIncome: false)
         ]
+        let serverResponse = """
+        [
+            {
+              "id": 1,
+              "name": "Зарплата",
+              "emoji": "💰",
+              "isIncome": true
+            }
+          ]
+        """
+//        guard let jsonData = serverResponse.data(using: .utf8) else {
+//            return []
+//        }
         
         return categories
     }
     
     func fetchCategories(direction: Direction) async throws -> [Category] {
-        // потом заменить на отдельный запрос в бд, не через fetchCategories()
+        // потом заменить на отдельный запрос на бэк, не через fetchCategories()
         let categories = try await fetchCategories()
         
         switch direction {

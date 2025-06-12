@@ -24,39 +24,23 @@ extension Transaction {
     private static let formatter = ISO8601DateFormatter()
     
     var jsonObject: [String : Any] {
-        let json: [String : Any] = [
+        [
             "id": id,
             "accountId": accountId,
             "categoryId": categoryId,
             "amount": String(describing: amount),
             "transactionDate": Self.formatter.string(from: transactionDate),
-            "comment": comment ?? NSNull(),
+            "comment": comment ?? NSNull(), // Как вернуть опциональное значение коммента в json?
             "createdAt": Self.formatter.string(from: createdAt),
-            "updatedAt": Self.formatter.string(from: updatedAt),
+            "updatedAt": Self.formatter.string(from: updatedAt)
         ]
-        
-        return json
-    }
-    
-    var csvObject: String {
-        let csv: String = [
-            String(id),
-            String(accountId),
-            String(describing: amount),
-            Self.formatter.string(from: transactionDate),
-            comment ?? "",
-            Self.formatter.string(from: createdAt),
-            Self.formatter.string(from: updatedAt)
-        ].joined(separator: ",")
-        
-        return csv
     }
     
     static func parse(jsonObject: Any) throws -> Transaction? {
         guard let dict = jsonObject as? [String: Any] else {
             throw ParseError.typeMismatch(field: "jsonObject", expected: "[String: Any]", actual: jsonObject)
         }
-        
+
         let id: Int = try require(dict, key: "id")
         let accountId: Int = try require(dict, key: "accountId")
         let categoryId: Int = try require(dict, key: "categoryId")
@@ -66,7 +50,7 @@ extension Transaction {
         let updatedAt: Date = try requireDate(dict, key: "updatedAt")
         let commentRaw = dict["comment"]
         let comment = (commentRaw is NSNull || commentRaw == nil) ? nil : (commentRaw as? String)
-        
+
         return Transaction(
             id: id,
             accountId: accountId,
@@ -121,6 +105,7 @@ extension Transaction {
 
 // MARK: - Вспомогательные методы для работы парсингом в json и csv
 extension Transaction {
+    // MARK: - Проверка и извлечение поля по ключу из [String: Any] (для json)
     private static func require<T>(_ dict: [String: Any], key: String) throws -> T {
         guard let value = dict[key] else {
             throw ParseError.missingField(field: key)
@@ -131,6 +116,7 @@ extension Transaction {
         return casted
     }
     
+    // MARK: - Извлечение и преобразование поля к Decimal
     private static func requireDecimal(_ dict: [String: Any], key: String) throws -> Decimal {
         let str: String = try require(dict, key: key)
         guard let decimal = Decimal(string: str) else {
@@ -139,6 +125,7 @@ extension Transaction {
         return decimal
     }
     
+    // MARK: - Извлечение и преобразование поля к Date
     private static func requireDate(_ dict: [String: Any], key: String) throws -> Date {
         let str: String = try require(dict, key: key)
         guard let date = formatter.date(from: str) else {
@@ -147,6 +134,7 @@ extension Transaction {
         return date
     }
     
+    // MARK: - Проверка и извлечение значения из CSV с преобразованием типа
     private static func require<T>(_ columns: [String: String], key: CSVParse, transform: (String) -> T?) throws -> T {
         guard let raw = columns[key.rawValue] else {
             throw ParseError.missingField(field: key.rawValue)

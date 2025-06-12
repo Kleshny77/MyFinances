@@ -10,8 +10,8 @@ import Foundation
 // MARK: - Модель транзакции
 struct Transaction: Equatable {
     let id: Int
-    var account: BankAccount
-    var category: Category
+    var accountId: Int
+    var categoryId: Int
     var amount: Decimal
     var transactionDate: Date
     var comment: String?
