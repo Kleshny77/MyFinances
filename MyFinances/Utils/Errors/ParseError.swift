@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Ошибки в преобразовании объектов в json и csv
+// MARK: - Ошибки преобразования объектов в json и csv
 enum ParseError: Error {
     case typeMismatch(field: String, expected: String, actual: Any)
     case missingField(field: String)
