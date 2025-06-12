@@ -171,6 +171,7 @@ final class TransactionParseTests: XCTestCase {
     }
 }
 
+// MARK: - Тестирование свойства jsonObject 
 final class TransactionJsonObjectTests: XCTestCase {
     var transaction: Transaction!
     
