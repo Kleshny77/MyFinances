@@ -17,16 +17,16 @@ struct CategoriesService {
             Category(id: 4, name: "Еда", emoji: "🍕", isIncome: false),
             Category(id: 5, name: "Коммунальные услуги", emoji: "🔌", isIncome: false)
         ]
-        let serverResponse = """
-        [
-            {
-              "id": 1,
-              "name": "Зарплата",
-              "emoji": "💰",
-              "isIncome": true
-            }
-          ]
-        """
+//        let serverResponse = """
+//        [
+//            {
+//              "id": 1,
+//              "name": "Зарплата",
+//              "emoji": "💰",
+//              "isIncome": true
+//            }
+//          ]
+//        """
 //        guard let jsonData = serverResponse.data(using: .utf8) else {
 //            return []
 //        }

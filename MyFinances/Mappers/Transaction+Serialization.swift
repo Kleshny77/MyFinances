@@ -23,7 +23,7 @@ enum CSVParse: String {
 extension Transaction {
     private static let formatter = ISO8601DateFormatter()
     
-    var jsonObject: [String : Any] {
+    var jsonObject: Any {
         [
             "id": id,
             "accountId": accountId,
