@@ -14,16 +14,14 @@ class TransactionsFileCache {
     
     func add(transaction: Transaction) throws {
         let id = transaction.id
-        guard !transactions.contains(where: { $0.key != id }) else {
+        guard transactions[id] == nil else {
             throw FileError.duplicateId(id)
         }
         transactions[id] = transaction
     }
     
     func delete(id: Int) throws {
-        if let index = transactions.firstIndex(where: { $0.key == id} ) {
-            transactions.remove(at: index)
-        } else {
+        guard transactions.removeValue(forKey: id) != nil else {
             throw FileError.transactionNotFound(id)
         }
     }
@@ -33,7 +31,7 @@ class TransactionsFileCache {
         let data = try JSONSerialization.data(withJSONObject: jsonObjects)
         try data.write(to: getCachePath(fileName: fileName))
     }
-
+    
     func loadTransactions(fileName: String) throws {
         let data = try Data(contentsOf: getCachePath(fileName: fileName))
         let jsonAny = try JSONSerialization.jsonObject(with: data)
