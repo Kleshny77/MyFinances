@@ -9,6 +9,7 @@ import Foundation
 
 // MARK: - Логика кэширования транзакций
 class TransactionsFileCache {
+    // В качестве коллекции выбран словарь для улучшенной оптимизации (вставка и удаление за O(1)), а не массив (вставка и удаление за O(n))
     private(set) var transactions: [Int: Transaction] = [:]
     
     func add(transaction: Transaction) throws {
@@ -27,24 +28,22 @@ class TransactionsFileCache {
         }
     }
     
-    func saveFile(fileName: String) throws {
+    func saveTransactions(fileName: String) throws {
         let jsonObjects = transactions.map { $0.value.jsonObject }
         let data = try JSONSerialization.data(withJSONObject: jsonObjects)
         try data.write(to: getCachePath(fileName: fileName))
     }
 
-    func downloadFile(fileName: String) throws {
+    func loadTransactions(fileName: String) throws {
         let data = try Data(contentsOf: getCachePath(fileName: fileName))
-        guard let jsonObject = try JSONSerialization.jsonObject(with: data) as? [Any] else {
-            return
+        let jsonAny = try JSONSerialization.jsonObject(with: data)
+        guard let jsonObject = jsonAny as? [Any] else {
+            throw ParseError.typeMismatch(field: fileName, expected: "[Any]", actual: jsonAny)
         }
         
         transactions = try jsonObject.reduce(into: [Int: Transaction]()) { dict, obj in
-            if let transaction = try Transaction.parse(jsonObject: obj) {
-                dict[transaction.id] = transaction
-            } else {
-                throw ParseError.invalidTransactionObject(obj)
-            }
+            let transaction = try Transaction.parse(jsonObject: obj)
+            dict[transaction.id] = transaction
         }
     }
 }
