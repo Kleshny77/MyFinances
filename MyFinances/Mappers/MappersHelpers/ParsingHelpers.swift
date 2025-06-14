@@ -7,6 +7,7 @@
 
 import Foundation
 
+// MARK: - Вспомогательные методы для парсинга
 func require<T, Key: JSONKey>(_ dict: [String: Any], key: Key) throws -> T {
     guard let value = dict[key.rawValue] else {
         throw ParseError.missingField(field: key.rawValue)
@@ -33,11 +34,7 @@ func requireDate<Key: JSONKey>(_ dict: [String: Any], key: Key, formatter: ISO86
     return date
 }
 
-func require<T, Key: JSONKey>(
-    _ columns: [String: String],
-    key: Key,
-    transform: (String) -> T?
-) throws -> T {
+func require<T, Key: JSONKey>(_ columns: [String: String], key: Key, transform: (String) -> T?) throws -> T {
     guard let raw = columns[key.rawValue] else {
         throw ParseError.missingField(field: key.rawValue)
     }

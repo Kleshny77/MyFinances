@@ -12,21 +12,21 @@ struct CategoriesService {
     func fetchCategories() async throws -> [Category] {
         let raw: [[String: Any]] = [
             [
-                "id":       1,
-                "name":     "Зарплата",
-                "emoji":    "💰",
+                "id": 1,
+                "name": "Зарплата",
+                "emoji": "💰",
                 "isIncome": true
             ],
             [
-                "id":       2,
-                "name":     "Еда",
-                "emoji":    "🍔",
+                "id": 2,
+                "name": "Еда",
+                "emoji": "🍔",
                 "isIncome": false
             ],
             [
-                "id":       3,
-                "name":     "Транспорт",
-                "emoji":    "🚗",
+                "id": 3,
+                "name": "Транспорт",
+                "emoji": "🚗",
                 "isIncome": false
             ]
         ]

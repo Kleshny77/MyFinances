@@ -9,7 +9,6 @@ import Foundation
 
 // MARK: - Логика кэширования транзакций
 class TransactionsFileCache {
-    // В качестве коллекции выбран словарь для улучшенной оптимизации (вставка и удаление за O(1)), а не массив (вставка и удаление за O(n))
     private(set) var transactions: [Int: Transaction] = [:]
     
     func add(transaction: Transaction) throws {

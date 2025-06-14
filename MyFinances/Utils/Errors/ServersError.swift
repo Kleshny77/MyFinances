@@ -7,10 +7,12 @@
 
 import Foundation
 
+// MARK: - Ошибки, связанные с ответом бекэнда
 enum ServersError: Error {
     case emptyAccountsList, emptyCategoriesList, emptyTransactionsList
 }
 
+// MARK: - Описание ошибок
 extension ServersError: LocalizedError {
     var errorDescription: String? {
         switch self {
