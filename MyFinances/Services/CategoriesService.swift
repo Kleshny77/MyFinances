@@ -10,26 +10,31 @@ import Foundation
 // MARK: - Еще дописываю этот сервис
 struct CategoriesService {
     func fetchCategories() async throws -> [Category] {
-        let categories = [
-            Category(id: 1, name: "Образование", emoji: "📚", isIncome: false),
-            Category(id: 2, name: "Зарплата", emoji: "💰", isIncome: true),
-            Category(id: 3, name: "Премия", emoji: "🤑", isIncome: true),
-            Category(id: 4, name: "Еда", emoji: "🍕", isIncome: false),
-            Category(id: 5, name: "Коммунальные услуги", emoji: "🔌", isIncome: false)
+        let raw: [[String: Any]] = [
+            [
+                "id":       1,
+                "name":     "Зарплата",
+                "emoji":    "💰",
+                "isIncome": true
+            ],
+            [
+                "id":       2,
+                "name":     "Еда",
+                "emoji":    "🍔",
+                "isIncome": false
+            ],
+            [
+                "id":       3,
+                "name":     "Транспорт",
+                "emoji":    "🚗",
+                "isIncome": false
+            ]
         ]
-//        let serverResponse = """
-//        [
-//            {
-//              "id": 1,
-//              "name": "Зарплата",
-//              "emoji": "💰",
-//              "isIncome": true
-//            }
-//          ]
-//        """
-//        guard let jsonData = serverResponse.data(using: .utf8) else {
-//            return []
-//        }
+        
+        guard !raw.isEmpty else {
+            throw ServersError.emptyCategoriesList
+        }
+        let categories = try raw.map { try Category.parse(jsonObject: $0) }
         
         return categories
     }

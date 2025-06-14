@@ -8,7 +8,7 @@
 import Foundation
 
 enum ServersError: Error {
-    case emptyAccountsList
+    case emptyAccountsList, emptyCategoriesList, emptyTransactionsList
 }
 
 extension ServersError: LocalizedError {
@@ -16,6 +16,11 @@ extension ServersError: LocalizedError {
         switch self {
         case .emptyAccountsList:
             return "Сервер вернул пустой список счетов"
+        case .emptyCategoriesList:
+            return "Сервер вернул пустой список категорий"
+        case .emptyTransactionsList:
+            return "Сервер вернул пустой список операций"
         }
+        
     }
 }
