@@ -1,0 +1,38 @@
+{
+  "configurations" : [
+    {
+      "id" : "4FD73D0B-7E9D-49D1-89C9-DEAAAFD239CC",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:MyFinances.xcodeproj",
+      "identifier" : "1E2170782DF345A40094E28D",
+      "name" : "MyFinances"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MyFinances.xcodeproj",
+        "identifier" : "1E2170852DF345A60094E28D",
+        "name" : "MyFinancesTests"
+      }
+    },
+    {
+      "enabled" : false,
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MyFinances.xcodeproj",
+        "identifier" : "1E21708F2DF345A60094E28D",
+        "name" : "MyFinancesUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
