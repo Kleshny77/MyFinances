@@ -13,7 +13,8 @@ struct TransactionsListView: View {
     var transactionsService = TransactionsService()
     @State private var isPresentingAdd = false
     @State private var isLoading = false
-
+    @State private var isPresentingHistory = false
+    
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomTrailing) {
@@ -27,24 +28,23 @@ struct TransactionsListView: View {
                             ForEach(transactions, id: \.id) { transaction in
                                 cellOutcome(transaction: transaction)
                             }
-                    }
+                        }
                 }
                 .listStyle(.insetGrouped)
                 .navigationTitle(direction == .income ? "Доходы сегодня" : "Расходы сегодня")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
-                            print("Открыть историю")
+                            isPresentingHistory = true
                         } label: {
                             Image(systemName: "clock.arrow.circlepath")
                         }
                     }
                 }
                 .onAppear {
-                    loadTransactions()
+                    Task { await loadTransactions() }
                 }
-
-                // Кнопка +
+                
                 Button(action: {
                     isPresentingAdd = true
                 }) {
@@ -62,28 +62,26 @@ struct TransactionsListView: View {
             .sheet(isPresented: $isPresentingAdd) {
                 // TODO: экран добавления
             }
-        }
-    }
-    
-    private func loadTransactions() {
-        isLoading = true
-        Task {
-            do {
-                guard let endOfToday = Date.endOfToday else { return }
-                let all = try await transactionsService.fetchTransactions(from: Date.startOfToday, to: endOfToday)
-                let filtered = all.filter { direction == .income ? $0.category.isIncome : !$0.category.isIncome }
-                DispatchQueue.main.async {
-                    self.transactions = filtered
-                    self.isLoading = false
-                }
-            } catch {
-                print("Ошибка загрузки транзакций: \(error)")
-                self.isLoading = false
+            .sheet(isPresented: $isPresentingHistory) {
+                HistoryView()
             }
         }
     }
     
-    private func cellOutcome(transaction: Transaction) -> some View {
+    private func loadTransactions() async {
+        isLoading = true
+        do {
+            guard let endOfToday = Date.endOfToday else { return }
+            let all = try await transactionsService.fetchTransactions(from: Date.startOfToday, to: endOfToday)
+            let filtered = all.filter { direction == .income ? $0.category.isIncome : !$0.category.isIncome }
+            self.transactions = filtered
+            self.isLoading = false
+        } catch {
+            self.isLoading = false
+        }
+    }
+    
+    func cellOutcome(transaction: Transaction) -> some View {
         HStack {
             Text(String(transaction.category.emoji))
                 .font(.system(size: 14.5))
