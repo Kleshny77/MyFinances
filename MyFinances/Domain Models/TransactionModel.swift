@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Модель транзакции
-struct Transaction: Equatable {
+struct Transaction: Equatable, Identifiable {
     let id: Int
     var account: BankAccount
     var category: Category

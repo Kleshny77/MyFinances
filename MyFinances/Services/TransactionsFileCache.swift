@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Логика кэширования транзакций
-class TransactionsFileCache {
+final class TransactionsFileCache {
     private(set) var transactions: [Int: Transaction] = [:]
     
     func add(transaction: Transaction) throws {
