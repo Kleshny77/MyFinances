@@ -54,7 +54,7 @@ struct TransactionsService {
                 category: category,
                 amount: amount,
                 transactionDate: transactionDate,
-                comment: "Транзакция #\(i) — \(category.name)",
+//                comment: "Транзакция #\(i) — \(category.name)",
                 createdAt: transactionDate,
                 updatedAt: transactionDate
             )

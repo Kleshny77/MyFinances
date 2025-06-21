@@ -1,5 +1,5 @@
 //
-//  DateFormatterFactory.swift
+//  FormatterFactory.swift
 //  MyFinances
 //
 //  Created by Артём on 14.06.2025.
@@ -18,4 +18,15 @@ enum DateFormatterFactory {
     static func date(from isoString: String) -> Date? {
         return iso8601.date(from: isoString)
     }
+}
+
+// MARK: - Фабрика форматтеров чисел 
+enum NumberFormatterFactory {
+    static let decimalSmart: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = " "
+        formatter.decimalSeparator = ","
+        return formatter
+    }()
 }

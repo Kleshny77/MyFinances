@@ -7,150 +7,91 @@
 
 import SwiftUI
 
+// MARK: - Экраны доходов и расходов. Задаются параметрически
 struct TransactionsListView: View {
-    let direction: Direction
-    @State var transactions: [Transaction] = []
-    var transactionsService = TransactionsService()
-    @State private var isPresentingAdd = false
-    @State private var isLoading = false
-    @State private var isPresentingHistory = false
+    @StateObject var viewModel: TransactionsListViewModel
     
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomTrailing) {
                 List {
-                    Section {
-                        cellAmount(transactions: transactions)
-                    }
-                    Section(header: Text("Операции")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.gray)) {
-                            ForEach(transactions, id: \.id) { transaction in
-                                cellOutcome(transaction: transaction)
-                            }
-                        }
+                    sort
+                    amount
+                    transactionsList
                 }
-                .listStyle(.insetGrouped)
-                .navigationTitle(direction == .income ? "Доходы сегодня" : "Расходы сегодня")
+                .navigationTitle(viewModel.navigationTitle)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            isPresentingHistory = true
-                        } label: {
-                            Image(systemName: "clock.arrow.circlepath")
-                        }
+                        historyButton
                     }
                 }
                 .onAppear {
-                    Task { await loadTransactions() }
+                    Task { await viewModel.loadTransactions() }
                 }
                 
-                Button(action: {
-                    isPresentingAdd = true
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.green)
-                        .clipShape(Circle())
-                        .shadow(radius: 4)
-                }
-                .padding(.bottom, 24)
-                .padding(.trailing, 24)
-            }
-            .sheet(isPresented: $isPresentingAdd) {
-                // TODO: экран добавления
-            }
-            .sheet(isPresented: $isPresentingHistory) {
-                HistoryView()
+                plusButton
             }
         }
     }
-    
-    private func loadTransactions() async {
-        isLoading = true
-        do {
-            guard let endOfToday = Date.endOfToday else { return }
-            let all = try await transactionsService.fetchTransactions(from: Date.startOfToday, to: endOfToday)
-            let filtered = all.filter { direction == .income ? $0.category.isIncome : !$0.category.isIncome }
-            self.transactions = filtered
-            self.isLoading = false
-        } catch {
-            self.isLoading = false
-        }
-    }
-    
-    func cellOutcome(transaction: Transaction) -> some View {
-        HStack {
-            Text(String(transaction.category.emoji))
-                .font(.system(size: 14.5))
-                .padding((22 - 14.5) / 2) // как расчитать паддинг по макету?
-                .background(Color.accentColor.opacity(0.2))  /*как расчитать прозрачность по макету?*/
-                .clipShape(Circle())
-            Text(transaction.category.name)
-                .font(.system(size: 17))
-                .padding(.horizontal, 10)
-            
-            Spacer()
-            
-            Text(String(describing: transaction.amount))
-            switch transaction.account.currency {
-            case "RUB":
-                Text("₽")
-            case "USD":
-                Text("$")
-            case "EUR":
-                Text("€")
-            default:
-                Text("?")
-            }
-            
-            Image(systemName: "chevron.forward")
-        }
-    }
-    
-    private func cellAmount(transactions: [Transaction]) -> some View  {
-        HStack {
-            Text("Всего")
-                .font(.system(size: 17))
-                .padding(.horizontal, 10)
-            
-            Spacer()
-            
-            let totalAmount = transactions.reduce(Decimal(0)) { $0 + $1.amount }
-            
-            Text(String(describing: totalAmount))
-            if let first = transactions.first {
-                switch first.account.currency {
-                case "RUB":
-                    Text("₽")
-                case "USD":
-                    Text("$")
-                case "EUR":
-                    Text("€")
-                default:
-                    Text("?")
+    private var sort: some View {
+        Section {
+            Picker("Сортировка", selection: $viewModel.sortOption) {
+                ForEach(TransactionsListViewModel.SortOption.allCases) { option in
+                    Text(option.rawValue).tag(option)
                 }
             }
+            .pickerStyle(.segmented)
+            .listRowInsets(.init())
         }
-    }
-}
-
-extension Date {
-    static var startOfToday: Date {
-        Calendar.current.startOfDay(for: Date())
     }
     
-    static var endOfToday: Date? {
-        let calendar = Calendar.current
-        guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) else {
-            return nil
+    private var amount: some View {
+        Section {
+            AmountCellView(viewModel: AmountCellViewModel(transactions: viewModel.transactions))
+                .listRowInsets(EdgeInsets())
         }
-        return calendar.date(byAdding: .second, value: -1, to: startOfTomorrow)
+    }
+    
+    private var transactionsList: some View {
+        Section(header: Text(TransactionsListConstants.headerTransactionsList)) {
+            ForEach(viewModel.transactions, id: \.id) { transaction in
+                if viewModel.direction == .income {
+                    TransactionsListIncomeCellView(transaction: transaction)
+                        .listRowInsets(EdgeInsets())
+                } else {
+                    TransactionsListOutcomeCellView(transaction: transaction)
+                        .listRowInsets(EdgeInsets())
+                }
+                
+            }
+        }
+    }
+    
+    private var historyButton: some View {
+        Button {
+            viewModel.isPresentingHistory = true
+        } label: {
+            Image(TransactionsListConstants.historyImageName)
+        }
+    }
+    
+    private var plusButton: some View {
+        Button(action: {
+            // TODO: Экран добавления (плюсик)
+        }) { plus }
+            .padding(.bottom, TransactionsListConstants.plusButtonBottom)
+            .padding(.trailing, TransactionsListConstants.plusButtonTrailing)
+    }
+    
+    private var plus: some View {
+        Image(systemName: TransactionsListConstants.plusImageName)
+            .foregroundColor(.white)
+            .padding()
+            .background(.accent)
+            .clipShape(Circle())
     }
 }
 
 #Preview {
-    TransactionsListView(direction: .outcome)
+    TransactionsListView(viewModel: TransactionsListViewModel(direction: .income))
 }
