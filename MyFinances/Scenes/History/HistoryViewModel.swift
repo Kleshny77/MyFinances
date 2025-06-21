@@ -17,18 +17,15 @@ final class HistoryViewModel: ObservableObject {
     @Published var period: HistoryPeriod {
         didSet(oldValue) {
             var periodChanged = false
-            // Если изменилось начало периода и оказалось позже конца
             if period.start != oldValue.start && period.start > period.end {
                 period.end = period.start
                 periodChanged = true
-            // Если изменился конец периода и он оказался раньше начала
             } else if period.end != oldValue.end && period.end < period.start {
                 period.start = period.end
                 periodChanged = true
             }
 
             if periodChanged {
-                // didSet вызовется снова, так что просто выходим
                 return
             }
             
@@ -39,10 +36,10 @@ final class HistoryViewModel: ObservableObject {
     @Published private(set) var isLoading = false
 
     private let service = TransactionsService()
-    private let direction: Direction
+    private let direction: Direction?
     
     init(
-        direction: Direction,
+        direction: Direction?,
         period: HistoryPeriod = HistoryPeriod(
             start: Calendar.current.date(byAdding: .month, value: -1, to: .now) ?? .now,
             end: Date.now
@@ -78,17 +75,19 @@ final class HistoryViewModel: ObservableObject {
                 to: endOfDay(for: period.end)
             )
             
-            transactions = allTransactions.filter {
-                direction == .income ? $0.category.isIncome : !$0.category.isIncome
+            var filteredTransactions = allTransactions
+            if let direction = direction {
+                filteredTransactions = allTransactions.filter {
+                    direction == .income ? $0.category.isIncome : !$0.category.isIncome
+                }
             }
-            .sorted { $0.transactionDate > $1.transactionDate }
+            
+            transactions = filteredTransactions.sorted { $0.transactionDate > $1.transactionDate }
             
         } catch {
             transactions = []
         }
     }
-    
-    // MARK: - Date Helpers
     
     private func startOfDay(for date: Date) -> Date {
         Calendar.current.startOfDay(for: date)

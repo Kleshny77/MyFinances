@@ -14,22 +14,16 @@ struct HistoryView: View {
     @StateObject var viewModel: HistoryViewModel
 
     var body: some View {
-        NavigationView {
-            List {
-                PeriodSectionView(
-                    start: $viewModel.period.start,
-                    end: $viewModel.period.end
-                )
-                TotalSectionView(formattedTotal: viewModel.formattedTotal)
-                OperationsSectionView(transactions: viewModel.transactions)
-            }
-            .navigationTitle("Моя история")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Закрыть") { dismiss() }
-                }
-            }
+        List {
+            PeriodSectionView(
+                start: $viewModel.period.start,
+                end: $viewModel.period.end
+            )
+            TotalSectionView(formattedTotal: viewModel.formattedTotal)
+            OperationsSectionView(transactions: viewModel.transactions)
         }
+        .navigationTitle("Моя история")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -64,11 +58,15 @@ struct OperationsSectionView: View {
 
     var body: some View {
         Section(header: Text("Операции")) {
-            ForEach(transactions, id: \.id) { tx in
-                if tx.category.isIncome {
-                    TransactionsListIncomeCellView(transaction: tx)
-                } else {
-                    TransactionsListOutcomeCellView(transaction: tx)
+            if transactions.isEmpty {
+                Text("Нет операций за выбранный период")
+            } else {
+                ForEach(transactions, id: \.id) { tx in
+                    if tx.category.isIncome {
+                        TransactionsListIncomeCellView(transaction: tx)
+                    } else {
+                        TransactionsListOutcomeCellView(transaction: tx)
+                    }
                 }
             }
         }

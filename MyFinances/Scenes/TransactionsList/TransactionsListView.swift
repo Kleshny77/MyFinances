@@ -68,9 +68,7 @@ struct TransactionsListView: View {
     }
     
     private var historyButton: some View {
-        Button {
-            viewModel.isPresentingHistory = true
-        } label: {
+        NavigationLink(destination: HistoryView(viewModel: HistoryViewModel(direction: viewModel.direction))) {
             Image(TransactionsListConstants.historyImageName)
         }
     }
