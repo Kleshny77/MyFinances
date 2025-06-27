@@ -14,39 +14,47 @@ struct HistoryPeriod {
 
 @MainActor
 final class HistoryViewModel: ObservableObject {
-    @Published var period: HistoryPeriod {
-        didSet(oldValue) {
-            var periodChanged = false
-            if period.start != oldValue.start && period.start > period.end {
-                period.end = period.start
-                periodChanged = true
-            } else if period.end != oldValue.end && period.end < period.start {
-                period.start = period.end
-                periodChanged = true
+    @Published var startDate: Date {
+        didSet {
+            if startDate > endDate {
+                endDate = startDate
             }
-
-            if periodChanged {
-                return
-            }
-            
-            Task { await loadTransactions() }
+            updatePeriod()
         }
     }
+
+    @Published var endDate: Date {
+        didSet {
+            if endDate < startDate {
+                startDate = endDate
+            }
+            updatePeriod()
+        }
+    }
+
     @Published private(set) var transactions: [Transaction] = []
     @Published private(set) var isLoading = false
 
+    @Published var sortOption: TransactionsListViewModel.SortOption = .date {
+        didSet {
+            transactions = applySort(transactions)
+        }
+    }
+
     private let service = TransactionsService()
-    private let direction: Direction?
-    
+    let direction: Direction?
+
     init(
         direction: Direction?,
-        period: HistoryPeriod = HistoryPeriod(
+        initialPeriod: HistoryPeriod = HistoryPeriod(
             start: Calendar.current.date(byAdding: .month, value: -1, to: .now) ?? .now,
             end: Date.now
         )
     ) {
         self.direction = direction
-        self.period = period
+        self.startDate = initialPeriod.start
+        self.endDate = initialPeriod.end
+
         Task { await loadTransactions() }
     }
 
@@ -57,38 +65,43 @@ final class HistoryViewModel: ObservableObject {
     var formattedTotal: String {
         totalAmount.formattedSmart
     }
-
-    var formattedStart: String {
-        Self.mediumDateFormatter.string(from: period.start)
-    }
-
-    var formattedEnd: String {
-        Self.mediumDateFormatter.string(from: period.end)
+    
+    private func applySort(_ list: [Transaction]) -> [Transaction] {
+        switch sortOption {
+        case .date:
+            return list.sorted { $0.transactionDate > $1.transactionDate }
+        case .amount:
+            return list.sorted { $0.amount > $1.amount }
+        }
     }
 
     func loadTransactions() async {
         isLoading = true
         defer { isLoading = false }
+
         do {
             let allTransactions = try await service.fetchTransactions(
-                from: startOfDay(for: period.start),
-                to: endOfDay(for: period.end)
+                from: startOfDay(for: startDate),
+                to: endOfDay(for: endDate)
             )
-            
-            var filteredTransactions = allTransactions
+
+            var filtered = allTransactions
             if let direction = direction {
-                filteredTransactions = allTransactions.filter {
+                filtered = allTransactions.filter {
                     direction == .income ? $0.category.isIncome : !$0.category.isIncome
                 }
             }
-            
-            transactions = filteredTransactions.sorted { $0.transactionDate > $1.transactionDate }
-            
+
+            transactions = applySort(filtered)
         } catch {
             transactions = []
         }
     }
-    
+
+    private func updatePeriod() {
+        Task { await loadTransactions() }
+    }
+
     private func startOfDay(for date: Date) -> Date {
         Calendar.current.startOfDay(for: date)
     }
@@ -98,10 +111,4 @@ final class HistoryViewModel: ObservableObject {
         let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay(for: date)) ?? date
         return calendar.date(byAdding: .second, value: -1, to: startOfTomorrow) ?? date
     }
-
-    private static let mediumDateFormatter: DateFormatter = {
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        return df
-    }()
 }

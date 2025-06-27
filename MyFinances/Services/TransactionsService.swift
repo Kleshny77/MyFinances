@@ -11,10 +11,9 @@ struct TransactionsService {
     private let cache = TransactionsFileCache()
     private let fileName = "transactions.json"
     
-    // Моковые транзакции
     private let mockTransactions: [Transaction] = {
-        let baseDate = Date.startOfToday
         let calendar = Calendar.current
+        let baseDate = Date.startOfToday
         let categories: [Category] = [
             Category(id: 1, name: "Продукты", emoji: "🛒", isIncome: false),
             Category(id: 2, name: "Зарплата", emoji: "💼", isIncome: true),
@@ -27,44 +26,56 @@ struct TransactionsService {
             Category(id: 9, name: "Путешествия", emoji: "✈️", isIncome: false),
             Category(id: 10, name: "Премия", emoji: "🏅", isIncome: true)
         ]
+        
         let accounts: [BankAccount] = [
             BankAccount(id: 1, userId: 1, name: "Тинькофф Дебетовая", balance: 12000, currency: "RUB", createdAt: baseDate, updatedAt: baseDate),
-            BankAccount(id: 2, userId: 1, name: "СберКарта", balance: 5000, currency: "RUB", createdAt: baseDate, updatedAt: baseDate),
-            BankAccount(id: 3, userId: 1, name: "USD Savings", balance: 300, currency: "USD", createdAt: baseDate, updatedAt: baseDate),
-            BankAccount(id: 4, userId: 1, name: "EUR Card", balance: 150, currency: "EUR", createdAt: baseDate, updatedAt: baseDate)
         ]
-        let n = 50
-        let secondsInDay = 24 * 60 * 60
-        let interval = secondsInDay / n
-        return (0..<n).map { i in
-            let transactionDate = calendar.date(byAdding: .second, value: i * interval, to: baseDate)!
-            let category = categories[i % categories.count]
-            let account = accounts[i % accounts.count]
+
+        let totalCount = 100
+        let todayCount = 40
+        var result: [Transaction] = []
+
+        for i in 0..<totalCount {
+            let category = categories.randomElement()!
+            let account = accounts.randomElement()!
             let isIncome = category.isIncome
-            let amount: Decimal = {
+
+            let randomAmount: Decimal = {
                 if isIncome {
-                    return Decimal(500 + (i % 7) * 100 + (i * 13) % 250)
+                    return Decimal(Int.random(in: 400...1200))
                 } else {
-                    return Decimal(50 + (i % 5) * 70 + (i * 17) % 120)
+                    return Decimal(Int.random(in: 50...700))
                 }
             }()
-            return Transaction(
-                id: i,
-                account: account,
-                category: category,
-                amount: amount,
-                transactionDate: transactionDate,
-//                comment: "Транзакция #\(i) — \(category.name)",
-                createdAt: transactionDate,
-                updatedAt: transactionDate
+            
+            let transactionDate: Date = {
+                if i < todayCount {
+                    return calendar.date(byAdding: .second, value: Int.random(in: 0..<(24 * 60 * 60)), to: baseDate)!
+                } else {
+                    let daysAgo = Int.random(in: 1...30)
+                    let randomTime = Int.random(in: 0..<(24 * 60 * 60))
+                    let date = calendar.date(byAdding: .day, value: -daysAgo, to: baseDate)!
+                    return calendar.date(byAdding: .second, value: randomTime, to: date)!
+                }
+            }()
+            
+            result.append(
+                Transaction(
+                    id: i,
+                    account: account,
+                    category: category,
+                    amount: randomAmount,
+                    transactionDate: transactionDate,
+                    createdAt: transactionDate,
+                    updatedAt: transactionDate
+                )
             )
         }
+
+        return result.sorted(by: { $0.transactionDate > $1.transactionDate })
     }()
     
     func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction] {
-        // try cache.loadTransactions(fileName: fileName)
-        // let transactions = cache.transactions.values
-        // Используем моковые данные вместо файла
         let transactions = mockTransactions
             .filter { startDate ... endDate ~= $0.transactionDate }
             .sorted { $0.transactionDate < $1.transactionDate }

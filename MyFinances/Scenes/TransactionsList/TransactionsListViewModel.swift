@@ -11,7 +11,6 @@ import Foundation
 final class TransactionsListViewModel: ObservableObject {
     @Published var transactions: [Transaction] = []
     @Published var isLoading = false
-    @Published var isPresentingHistory = false
     @Published var sortOption: SortOption = .date {
         didSet {
             transactions = applySort(transactions)

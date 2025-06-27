@@ -27,7 +27,6 @@ struct AmountCellView: View {
     private var title: some View {
         Text(CellsConstants.titleAmountCell)
             .font(.system(size: CellsConstants.fontSize))
-        
     }
     
     private var totalAmount: some View {
