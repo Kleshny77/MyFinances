@@ -21,4 +21,14 @@ extension Date {
         }
         return calendar.date(byAdding: .second, value: -1, to: startOfTomorrow)
     }
+    
+    static func startOfDay(for date: Date) -> Date {
+        Calendar.current.startOfDay(for: date)
+    }
+
+    static func endOfDay(for date: Date) -> Date {
+        let calendar = Calendar.current
+        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay(for: date)) ?? date
+        return calendar.date(byAdding: .second, value: -1, to: startOfTomorrow) ?? date
+    }
 }

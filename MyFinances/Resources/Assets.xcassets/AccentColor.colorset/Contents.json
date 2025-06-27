@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "colors" : [
     {
       "color" : {
@@ -11,16 +10,14 @@
           "red" : "0.439"
         }
       },
-=======
-  "images" : [
-    {
-      "filename" : "история.pdf",
->>>>>>> origin/main
       "idiom" : "universal"
     }
   ],
   "info" : {
     "author" : "xcode",
     "version" : 1
+  },
+  "properties" : {
+    "localizable" : true
   }
 }

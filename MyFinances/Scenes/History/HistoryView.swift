@@ -13,22 +13,21 @@ struct HistoryView: View {
     @StateObject var viewModel: HistoryViewModel
     
     var body: some View {
-            List {
-                sort
-                datePicker
-                transactionsList
-            }
-            .navigationTitle("Моя история")
-            .onAppear {
-                Task { await viewModel.loadTransactions() }
-            }
+        List {
+            sort
+            datePicker
+            transactionsList
+        }
+        .navigationTitle("Моя история")
+        .onAppear {
+            Task { await viewModel.loadTransactions() }
+        }
     }
+    
     private var sort: some View {
-        Section {
-            Picker("Сортировка", selection: $viewModel.sortOption) {
-                ForEach(TransactionsListViewModel.SortOption.allCases) { option in
-                    Text(option.rawValue).tag(option)
-                }
+        Picker("Сортировка", selection: $viewModel.sortOption) {
+            ForEach(TransactionsListViewModel.SortOption.allCases) { option in
+                Text(option.rawValue).tag(option)
             }
             .pickerStyle(.segmented)
             .listRowInsets(.init())
@@ -62,7 +61,6 @@ struct HistoryView: View {
                     TransactionsListOutcomeCellView(transaction: transaction)
                         .listRowInsets(EdgeInsets())
                 }
-                
             }
         }
     }

@@ -13,27 +13,27 @@ struct TabBar: View {
         TabView {
             TransactionsListView(viewModel: TransactionsListViewModel(direction: .outcome))
                 .tabItem {
-                    Image(TabBarConstants.tabOneName)
+                    Image(TabBarConstants.tabOnePath)
                     Text(TabBarConstants.tabOneName)
                 }
             TransactionsListView(viewModel: TransactionsListViewModel(direction: .income))
                 .tabItem {
-                    Image(TabBarConstants.tabTwoName)
+                    Image(TabBarConstants.tabTwoPath)
                     Text(TabBarConstants.tabTwoName)
                 }
-            MockView()
+            MyAccountView()
                 .tabItem {
-                    Image(TabBarConstants.tabThreeName)
+                    Image(TabBarConstants.tabThreePath)
                     Text(TabBarConstants.tabThreeName)
                 }
             MockView()
                 .tabItem {
-                    Image(TabBarConstants.tabFourName)
+                    Image(TabBarConstants.tabFourPath)
                     Text(TabBarConstants.tabFourName)
                 }
             MockView()
                 .tabItem {
-                    Image(TabBarConstants.tabFiveName)
+                    Image(TabBarConstants.tabFivePath)
                     Text(TabBarConstants.tabFiveName)
                 }
         }

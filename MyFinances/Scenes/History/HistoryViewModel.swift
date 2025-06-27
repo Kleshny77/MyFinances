@@ -81,8 +81,8 @@ final class HistoryViewModel: ObservableObject {
 
         do {
             let allTransactions = try await service.fetchTransactions(
-                from: startOfDay(for: startDate),
-                to: endOfDay(for: endDate)
+                from: Date.startOfDay(for: startDate),
+                to: Date.endOfDay(for: endDate)
             )
 
             var filtered = allTransactions
@@ -100,15 +100,5 @@ final class HistoryViewModel: ObservableObject {
 
     private func updatePeriod() {
         Task { await loadTransactions() }
-    }
-
-    private func startOfDay(for date: Date) -> Date {
-        Calendar.current.startOfDay(for: date)
-    }
-
-    private func endOfDay(for date: Date) -> Date {
-        let calendar = Calendar.current
-        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay(for: date)) ?? date
-        return calendar.date(byAdding: .second, value: -1, to: startOfTomorrow) ?? date
     }
 }

@@ -14,7 +14,7 @@ enum TransactionsListConstants {
     static let plusButtonBottom: CGFloat = 21
     static let plusButtonTrailing: CGFloat = 16
     
-    static let historyImageName = "История"
+    static let historyImageName = "history"
     static let plusImageName = "plus"
     
     static let titleIncome = "Доходы сегодня"

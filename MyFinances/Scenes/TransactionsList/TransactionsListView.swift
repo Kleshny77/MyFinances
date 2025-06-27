@@ -33,16 +33,15 @@ struct TransactionsListView: View {
             }
         }
     }
+    
     private var sort: some View {
-        Section {
-            Picker("Сортировка", selection: $viewModel.sortOption) {
-                ForEach(TransactionsListViewModel.SortOption.allCases) { option in
-                    Text(option.rawValue).tag(option)
-                }
+        Picker("Сортировка", selection: $viewModel.sortOption) {
+            ForEach(TransactionsListViewModel.SortOption.allCases) { option in
+                Text(option.rawValue).tag(option)
             }
-            .pickerStyle(.segmented)
-            .listRowInsets(.init())
         }
+        .pickerStyle(.segmented)
+        .listRowInsets(.init())
     }
     
     private var amount: some View {
@@ -62,7 +61,6 @@ struct TransactionsListView: View {
                     TransactionsListOutcomeCellView(transaction: transaction)
                         .listRowInsets(EdgeInsets())
                 }
-                
             }
         }
     }

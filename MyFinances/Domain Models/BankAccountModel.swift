@@ -25,7 +25,7 @@ extension BankAccount {
         case "RUB": return "₽"
         case "USD": return "$"
         case "EUR": return "€"
-        default:    return "?"
+        default: return "?"
         }
     }
 }

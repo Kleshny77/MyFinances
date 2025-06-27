@@ -13,4 +13,10 @@ enum TabBarConstants {
     static let tabThreeName: String = "Счет"
     static let tabFourName: String = "Статьи"
     static let tabFiveName: String = "Настройки"
+    
+    static let tabOnePath: String = "outcome"
+    static let tabTwoPath: String = "income"
+    static let tabThreePath: String = "account"
+    static let tabFourPath: String = "items"
+    static let tabFivePath: String = "settings"
 }
