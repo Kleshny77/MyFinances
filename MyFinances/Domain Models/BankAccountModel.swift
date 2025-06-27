@@ -17,3 +17,15 @@ struct BankAccount: Equatable {
     let createdAt: Date
     let updatedAt: Date
 }
+
+// MARK: - Вычислимые свойства модели
+extension BankAccount {
+    var currencySymbol: String {
+        switch currency {
+        case "RUB": return "₽"
+        case "USD": return "$"
+        case "EUR": return "€"
+        default:    return "?"
+        }
+    }
+}
