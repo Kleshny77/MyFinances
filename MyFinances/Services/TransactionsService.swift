@@ -76,6 +76,8 @@ struct TransactionsService {
     }()
     
     func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction] {
+//        try cache.loadTransactions(fileName: fileName)
+//        let transactions = cache.transactions.values
         let transactions = mockTransactions
             .filter { startDate ... endDate ~= $0.transactionDate }
             .sorted { $0.transactionDate < $1.transactionDate }
