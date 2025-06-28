@@ -32,6 +32,7 @@ struct EndDateCellView: View {
         DatePicker("", selection: $viewModel.endDate, displayedComponents: .date)
             .labelsHidden()
             .background(Color(red: 212/255.0, green: 250/255.0, blue: 230/255.0).cornerRadius(8))
+            .accentColor(.supporting)
 
     }
 }
