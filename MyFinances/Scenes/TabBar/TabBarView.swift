@@ -9,6 +9,9 @@ import SwiftUI
 
 // MARK: - Таб бар, отвечающий за переключение между экранами
 struct TabBar: View {
+    init() {
+        UITabBar.appearance().backgroundColor = .white
+    }
     var body: some View {
         TabView {
             TransactionsListView(viewModel: TransactionsListViewModel(direction: .outcome))
@@ -21,7 +24,7 @@ struct TabBar: View {
                     Image(TabBarConstants.tabTwoPath)
                     Text(TabBarConstants.tabTwoName)
                 }
-            MyAccountView()
+            MyAccountView(viewModel: MyAccountViewModel())
                 .tabItem {
                     Image(TabBarConstants.tabThreePath)
                     Text(TabBarConstants.tabThreeName)
