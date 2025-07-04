@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1E307A292E175B7200B318B9 /* Ifrit in Frameworks */ = {isa = PBXBuildFile; productRef = 1E307A282E175B7200B318B9 /* Ifrit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1E2170872DF345A60094E28D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -48,6 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1E307A292E175B7200B318B9 /* Ifrit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -108,6 +113,7 @@
 			);
 			name = MyFinances;
 			packageProductDependencies = (
+				1E307A282E175B7200B318B9 /* Ifrit */,
 			);
 			productName = MyFinances;
 			productReference = 1E2170792DF345A40094E28D /* MyFinances.app */;
@@ -188,6 +194,9 @@
 			);
 			mainGroup = 1E2170702DF345A40094E28D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1E307A272E175B7200B318B9 /* XCRemoteSwiftPackageReference "Ifrit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1E21707A2DF345A40094E28D /* Products */;
 			projectDirPath = "";
@@ -551,6 +560,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1E307A272E175B7200B318B9 /* XCRemoteSwiftPackageReference "Ifrit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ukushu/Ifrit.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1E307A282E175B7200B318B9 /* Ifrit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1E307A272E175B7200B318B9 /* XCRemoteSwiftPackageReference "Ifrit" */;
+			productName = Ifrit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1E2170712DF345A40094E28D /* Project object */;
 }
