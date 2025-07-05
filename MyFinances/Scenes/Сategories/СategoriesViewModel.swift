@@ -12,26 +12,18 @@ import Ifrit
 class СategoriesViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var searchText: String = ""
-    private let fuse = Fuse()
-    
+
     private let service = CategoriesService()
     
     var filteredCategories: [Category] {
         guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else {
             return categories
         }
+
+        let names = categories.map { $0.name }
+        let matchedNames = FuzzySearch.search(searchText, in: names)
         
-        let pattern = fuse.createPattern(from: searchText)
-        
-        return categories
-            .compactMap { category -> (Category, Double)? in
-                if let hit = fuse.search(pattern, in: category.name) {
-                    return (category, hit.score)
-                }
-                return nil
-            }
-            .sorted { $0.1 < $1.1 }
-            .map(\.0)
+        return categories.filter { matchedNames.contains($0.name) }
     }
     
     func loadCategories() async {

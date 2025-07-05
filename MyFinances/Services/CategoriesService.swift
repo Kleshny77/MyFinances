@@ -28,7 +28,25 @@ struct CategoriesService {
                 "name": "Транспорт",
                 "emoji": "🚗",
                 "isIncome": false
-            ]
+            ],
+            [
+                "id": 4,
+                "name": "Кафе",
+                "emoji": "🧑‍🍳",
+                "isIncome": false
+            ],
+            [
+                "id": 5,
+                "name": "Образование",
+                "emoji": "🧑‍🏫",
+                "isIncome": false
+            ],
+            [
+                "id": 6,
+                "name": "Жилье",
+                "emoji": "🏠",
+                "isIncome": false
+            ],
         ]
         
         guard !raw.isEmpty else {
