@@ -26,7 +26,7 @@ struct TabBar: View {
                     Image(TabBarConstants.tabThreePath)
                     Text(TabBarConstants.tabThreeName)
                 }
-            MockView()
+            СategoriesView(viewModel: СategoriesViewModel())
                 .tabItem {
                     Image(TabBarConstants.tabFourPath)
                     Text(TabBarConstants.tabFourName)
