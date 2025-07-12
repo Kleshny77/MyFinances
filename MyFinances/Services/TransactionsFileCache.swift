@@ -16,6 +16,11 @@ final class TransactionsFileCache {
         set { Self.storage = newValue }
     }
     
+    func bootstrapIfNeeded(with mock: [Transaction]) {
+        guard transactions.isEmpty else { return }
+        mock.forEach { try? add(transaction: $0) }
+    }
+    
     func add(transaction: Transaction) throws {
         let id = transaction.id
         guard transactions[id] == nil else { throw FileError.duplicateId(id) }

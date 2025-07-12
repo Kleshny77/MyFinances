@@ -90,10 +90,8 @@ struct TransactionsService {
     
     init() {
         try? cache.loadTransactions(fileName: fileName)
-        if cache.transactions.isEmpty {
-            mockTransactions.forEach { try? cache.add(transaction: $0) }
-            try? cache.saveTransactions(fileName: fileName)
-        }
+        cache.bootstrapIfNeeded(with: mockTransactions)
+        try? cache.saveTransactions(fileName: fileName)
     }
     
     func fetchTransactions(from start: Date, to end: Date) async throws -> [Transaction] {

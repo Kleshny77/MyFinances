@@ -22,17 +22,19 @@ struct HistoryView: View {
         .navigationTitle("Моя история")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showAnalysis = true }) {
-                    Image(systemName: "chart.pie")
+                NavigationLink {
+                    AnalysisView(
+                        start: viewModel.startDate,
+                        end:   viewModel.endDate
+                    )
+                    .navigationTitle("Анализ")
+                    .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    Image(systemName: "document")
                 }
             }
         }
-        .onAppear {
-            Task { await viewModel.loadTransactions() }
-        }
-        .sheet(isPresented: $showAnalysis) {
-            AnalysisViewControllerWrapper()
-        }
+        .task { await viewModel.loadTransactions() }
     }
     
     private var sort: some View {
@@ -75,19 +77,6 @@ struct HistoryView: View {
             }
         }
     }
-}
-
-struct AnalysisViewControllerWrapper: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> AnalysisViewController {
-        let service = TransactionsService()
-        return AnalysisViewController(
-            startDate: Date().startOfMonth,
-            endDate: Date().endOfMonth,
-            service: service,
-            direction: .income
-        )
-    }
-    func updateUIViewController(_ uiViewController: AnalysisViewController, context: Context) {}
 }
 
 #Preview {
