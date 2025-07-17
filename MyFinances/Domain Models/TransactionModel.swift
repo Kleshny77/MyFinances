@@ -18,4 +18,3 @@ struct Transaction: Equatable, Identifiable {
     var createdAt: Date
     var updatedAt: Date
 }
-

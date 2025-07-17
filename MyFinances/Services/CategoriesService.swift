@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Еще дописываю этот сервис
+// MARK: - Сервис для работы с категориями
 struct CategoriesService {
     func fetchCategories() async throws -> [Category] {
         let raw: [[String: Any]] = [

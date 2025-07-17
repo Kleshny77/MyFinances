@@ -18,8 +18,8 @@ struct BankAccount: Equatable {
     let updatedAt: Date
 }
 
-// MARK: - Вычислимые свойства модели
 extension BankAccount {
+    // MARK: - Перевод сокращений символов в их знаки
     var currencySymbol: String {
         switch currency {
         case "RUB": return "₽"

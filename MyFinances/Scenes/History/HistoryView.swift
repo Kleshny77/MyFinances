@@ -11,6 +11,7 @@ import SwiftUI
 // MARK: - Экраны истории. Задаются параметрически
 struct HistoryView: View {
     @StateObject var viewModel: HistoryViewModel
+    @State private var showAnalysis = false
     
     var body: some View {
         List {
@@ -19,9 +20,21 @@ struct HistoryView: View {
             transactionsList
         }
         .navigationTitle("Моя история")
-        .onAppear {
-            Task { await viewModel.loadTransactions() }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink {
+                    AnalysisView(
+                        start: viewModel.startDate,
+                        end:   viewModel.endDate
+                    )
+                    .navigationTitle("Анализ")
+                    .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    Image(systemName: "document")
+                }
+            }
         }
+        .task { await viewModel.loadTransactions() }
     }
     
     private var sort: some View {

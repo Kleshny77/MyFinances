@@ -2,34 +2,34 @@
 //  СategoriesView.swift
 //  MyFinances
 //
-//  Created by Артём on 05.07.2025.
+//  Created by Артём on 03.07.2025.
 //
 
 import Foundation
+import SwiftUI
 
-@MainActor
-class СategoriesViewModel: ObservableObject {
-    @Published var categories: [Category] = []
-    @Published var searchText: String = ""
-
-    private let service = CategoriesService()
+struct СategoriesView: View {
+    @StateObject var viewModel: СategoriesViewModel
     
-    var filteredCategories: [Category] {
-        guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return categories
+    var body: some View {
+        NavigationView {
+            List {
+                categories
+            }
+            .navigationTitle("Мои статьи")
+            .searchable(text: $viewModel.searchText, prompt: "Search")
+            .onAppear {
+                Task { await viewModel.loadCategories() }
+            }
         }
-
-        let names = categories.map { $0.name }
-        let matchedNames = FuzzySearch.search(searchText, in: names)
-        
-        return categories.filter { matchedNames.contains($0.name) }
     }
     
-    func loadCategories() async {
-        do {
-            categories = try await service.fetchCategories()
-        } catch {
-            print("Error loading categories: \(error)")
+    private var categories: some View {
+        Section(header: Text("Статьи")) {
+            ForEach(viewModel.filteredCategories, id: \.id) { category in
+                CategoryView(category: category)
+                    .listRowInsets(EdgeInsets())
+            }
         }
     }
 }

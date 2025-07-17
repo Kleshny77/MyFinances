@@ -9,13 +9,21 @@ import Foundation
 
 // MARK: - Логика кэширования транзакций
 final class TransactionsFileCache {
-    private(set) var transactions: [Int: Transaction] = [:]
+    private static var storage: [Int: Transaction] = [:]
+    
+    var transactions: [Int: Transaction] {
+        get { Self.storage }
+        set { Self.storage = newValue }
+    }
+    
+    func bootstrapIfNeeded(with mock: [Transaction]) {
+        guard transactions.isEmpty else { return }
+        mock.forEach { try? add(transaction: $0) }
+    }
     
     func add(transaction: Transaction) throws {
         let id = transaction.id
-        guard transactions[id] == nil else {
-            throw FileError.duplicateId(id)
-        }
+        guard transactions[id] == nil else { throw FileError.duplicateId(id) }
         transactions[id] = transaction
     }
     
@@ -33,15 +41,15 @@ final class TransactionsFileCache {
     
     func loadTransactions(fileName: String) throws {
         let data = try Data(contentsOf: getCachePath(fileName: fileName))
-        let jsonAny = try JSONSerialization.jsonObject(with: data)
-        guard let jsonObject = jsonAny as? [Any] else {
-            throw ParseError.typeMismatch(field: fileName, expected: "[Any]", actual: jsonAny)
+        let any = try JSONSerialization.jsonObject(with: data)
+        guard let json = any as? [Any] else {
+            throw ParseError.typeMismatch(field: fileName, expected: "[Any]", actual: any)
         }
-        
-        transactions = try jsonObject.reduce(into: [Int: Transaction]()) { dict, obj in
-            let transaction = try Transaction.parse(jsonObject: obj)
-            dict[transaction.id] = transaction
+        let dict = try json.reduce(into: [Int: Transaction]()) { res, obj in
+            let trx = try Transaction.parse(jsonObject: obj)
+            res[trx.id] = trx
         }
+        transactions = dict
     }
 }
 
