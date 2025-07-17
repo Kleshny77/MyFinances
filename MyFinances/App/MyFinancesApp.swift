@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// MARK: - Вход в приложение
 @main
 struct MyFinancesApp: App {
     var body: some Scene {

@@ -7,6 +7,7 @@
 
 import Foundation
 
+// MARK: - Сервис для работы с транзакциями
 struct TransactionsService {
     private let cache = TransactionsFileCache()
     private let fileName = "transactions.json"
@@ -16,16 +17,16 @@ struct TransactionsService {
         let baseDate = Date.startOfToday
         
         let categories: [Category] = [
-            Category(id: 1, name: "Продукты",     emoji: "🛒", isIncome: false),
-            Category(id: 2, name: "Зарплата",     emoji: "💼", isIncome: true),
-            Category(id: 3, name: "Транспорт",    emoji: "🚕", isIncome: false),
-            Category(id: 4, name: "Подарки",      emoji: "🎁", isIncome: true),
-            Category(id: 5, name: "Цели",         emoji: "🏦", isIncome: false),
-            Category(id: 6, name: "Инвестиции",   emoji: "📈", isIncome: true),
-            Category(id: 7, name: "Кафе",         emoji: "☕️", isIncome: false),
-            Category(id: 8, name: "Фриланс",      emoji: "🧑‍💻", isIncome: true),
-            Category(id: 9, name: "Путешествия",  emoji: "✈️", isIncome: false),
-            Category(id: 10, name: "Премия",      emoji: "🏅", isIncome: true)
+            Category(id: 1, name: "Продукты", emoji: "🛒", isIncome: false),
+            Category(id: 2, name: "Зарплата", emoji: "💼", isIncome: true),
+            Category(id: 3, name: "Транспорт", emoji: "🚕", isIncome: false),
+            Category(id: 4, name: "Подарки", emoji: "🎁", isIncome: true),
+            Category(id: 5, name: "Цели", emoji: "🏦", isIncome: false),
+            Category(id: 6, name: "Инвестиции", emoji: "📈", isIncome: true),
+            Category(id: 7, name: "Кафе", emoji: "☕️", isIncome: false),
+            Category(id: 8, name: "Фриланс", emoji: "🧑‍💻", isIncome: true),
+            Category(id: 9, name: "Путешествия", emoji: "✈️", isIncome: false),
+            Category(id: 10, name: "Премия", emoji: "🏅", isIncome: true)
         ]
         
         let accounts: [BankAccount] = [

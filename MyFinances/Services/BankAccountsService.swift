@@ -7,35 +7,9 @@
 
 import Foundation
 
+// MARK: - Сервис для работы с аккаунтом
 struct BankAccountsService {
     func fetchAccount() async throws -> BankAccount {
-//        let raw: [[String: Any]] = [
-//            [
-//                "id": 1,
-//                "userId": 1,
-//                "name": "Основной счёт",
-//                "balance": "1000.00",
-//                "currency": "RUB",
-//                "createdAt": "2025-06-13T23:21:48.542Z",
-//                "updatedAt": "2025-06-13T23:21:48.542Z"
-//            ],
-//            [
-//                "id": 2,
-//                "userId": 1,
-//                "name": "Дополнительный счёт",
-//                "balance": "503.00",
-//                "currency": "RUB",
-//                "createdAt": "2026-08-10T01:52:44.133Z",
-//                "updatedAt": "2026-08-10T01:52:44.133Z"
-//            ]
-//        ]
-//        
-//        guard let first = raw.first else {
-//            throw ServersError.emptyAccountsList
-//        }
-//        
-//        return try BankAccount.parse(jsonObject: first)
-        // временно убираю этот мок и заменяю другим
         return try await TransactionsService().fetchTransactions(from: .distantPast, to: .distantFuture)[0].account
     }
     

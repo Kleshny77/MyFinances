@@ -7,6 +7,7 @@
 
 import Foundation
 
+// MARK: - Логика ленивого поиска
 struct FuzzySearch {
     static func search(_ pattern: String, in collection: [String], maxDistance: Int = 2) -> [String] {
         let lowercasedPattern = pattern.lowercased()
