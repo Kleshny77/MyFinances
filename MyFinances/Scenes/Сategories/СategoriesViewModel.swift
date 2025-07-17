@@ -31,6 +31,5 @@ class СategoriesViewModel: ObservableObject {
             categories = try await service.fetchCategories()
         } catch {
             print("Error loading categories: \(error)")
-        }
     }
 }
