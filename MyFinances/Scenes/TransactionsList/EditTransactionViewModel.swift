@@ -10,57 +10,67 @@ import SwiftUI
 
 @MainActor
 final class EditTransactionViewModel: ObservableObject {
-    private let originalTransaction: Transaction?
-    let isEditing: Bool
-    let direction: Direction
-    private let accountId: Int
-
-    private let transactionsService = TransactionsService.create()
-    private let categoriesService = CategoriesService.create()
-    private let bankAccountsService = BankAccountsService.create()
-
-    @Published var selectedCategory: Category?
     @Published var amount: String = ""
-    @Published var selectedDate: Date = Date()
     @Published var comment: String = ""
-    @Published var categories: [Category] = []
-    @Published var showCategoryPicker = false
+    @Published var selectedDate: Date = Date()
+    @Published var selectedCategory: Category?
+    @Published var isLoading = false
+    @Published var saveCompleted = false
     @Published var showAlert = false
     @Published var alertMessage = ""
-    @Published var saveCompleted = false
+    
+    private var transactionsService: TransactionsService?
+    private let bankAccountsService = BankAccountsService.create()
+    private let categoriesService = CategoriesService.create()
+    
+    let originalTransaction: Transaction?
+    let isEditing: Bool
+    let direction: Direction
+    let accountId: Int
+    
+    @Published var categories: [Category] = []
+    @Published var showCategoryPicker = false
     @Published var deleteCompleted = false
-    @Published var isLoading = false
-
-    var onSave:   (() -> Void)?
+    
+    var onSave: (() -> Void)?
     var onDelete: (() -> Void)?
-
+    
     var isValid: Bool {
         guard selectedCategory != nil else { return false }
-        let value = Decimal(string: amount.replacingOccurrences(of: Locale.current.decimalSeparator ?? ",",
-                                                                with: ".")) ?? 0
+        let value = Decimal(string: amount.replacingOccurrences(of: Locale.current.decimalSeparator ?? ",", with: ".")) ?? 0
         return value > 0
     }
-
+    
     var canDelete: Bool { isEditing }
     let commentPlaceholder = "Комментарий"
     var deleteButtonTitle: String { direction == .income ? "Удалить доход" : "Удалить расход" }
-
+    
     init(transaction: Transaction?, direction: Direction, accountId: Int) {
         self.originalTransaction = transaction
         self.isEditing = transaction != nil
         self.direction = direction
         self.accountId = accountId
-
+        
         if let trx = transaction {
             selectedCategory = trx.category
             amount = trx.amount.description.replacingOccurrences(of: ".", with: ",")
             selectedDate = trx.transactionDate
             comment = trx.comment ?? ""
         }
-
-        Task { 
-            await loadCategories()
+        
+        Task {
+            do {
+                try await initializeService()
+                await loadCategories()
+            } catch {
+                transactionsService = TransactionsService.create()
+                await loadCategories()
+            }
         }
+    }
+    
+    private func initializeService() async throws {
+        transactionsService = await TransactionsService.createWithLocalStorage()
     }
 
     func loadCategories() async {
@@ -104,6 +114,18 @@ final class EditTransactionViewModel: ObservableObject {
                 comment: comment.isEmpty ? " " : comment
             )
 
+            guard let transactionsService = transactionsService else {
+                let fallbackService = TransactionsService.create()
+                if isEditing, let id = originalTransaction?.id {
+                    try await fallbackService.updateTransaction(id: id, request: request)
+                } else {
+                    try await fallbackService.createTransaction(request: request)
+                }
+                saveCompleted = true
+                onSave?()
+                return
+            }
+            
             if isEditing, let id = originalTransaction?.id {
                 try await transactionsService.updateTransaction(id: id, request: request)
             } else {
@@ -117,10 +139,8 @@ final class EditTransactionViewModel: ObservableObject {
             if let networkError = error as? NetworkError {
                 switch networkError {
                 case .httpError(let code, _):
-                    // HTTP ошибка - показываем пользователю
                     showAlert("Ошибка сервера: \(code)")
                 case .decodingFailed(_):
-                    // Если операция создания/обновления прошла, но ответ не смогли декодировать — не показываем alert, просто завершаем
                     saveCompleted = true
                     onSave?()
                 case .encodingFailed(_):
@@ -143,6 +163,14 @@ final class EditTransactionViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
+            guard let transactionsService = transactionsService else {
+                let fallbackService = TransactionsService.create()
+                try await fallbackService.deleteTransaction(id: id)
+                deleteCompleted = true
+                onDelete?()
+                return
+            }
+            
             try await transactionsService.deleteTransaction(id: id)
             deleteCompleted = true
             onDelete?()

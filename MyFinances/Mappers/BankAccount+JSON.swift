@@ -42,7 +42,7 @@ extension BankAccount {
     static func fromAPI(_ api: AccountResponse) -> BankAccount {
         BankAccount(
             id: api.id,
-            userId: 0, // userId не приходит из API
+            userId: 0,
             name: api.name,
             balance: Decimal(string: api.balance) ?? 0,
             currency: api.currency,

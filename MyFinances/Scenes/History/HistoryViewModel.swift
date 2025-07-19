@@ -41,7 +41,7 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
-    private let service = TransactionsService.create()
+    private var service: TransactionsService?
     let accountId: Int
     let direction: Direction?
 
@@ -60,11 +60,17 @@ final class HistoryViewModel: ObservableObject {
 
         Task {
             do {
+                try await initializeService()
                 try await loadTransactions()
             } catch {
-                // Ошибка при инициализации - транзакции будут загружены позже
+                service = TransactionsService.create()
+                try await loadTransactions()
             }
         }
+    }
+    
+    private func initializeService() async throws {
+        service = await TransactionsService.createWithLocalStorage()
     }
 
     var totalAmount: Decimal {
@@ -85,6 +91,24 @@ final class HistoryViewModel: ObservableObject {
     }
 
     func loadTransactions() async throws {
+        guard let service = service else {
+            let fallbackService = TransactionsService.create()
+            let startStr = DateFormatterFactory.yyyyMMdd.string(from: Date.startOfDay(for: startDate))
+            let endStr = DateFormatterFactory.yyyyMMdd.string(from: Date.endOfDay(for: endDate))
+            let responses = try await fallbackService.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+            let allTransactions = responses.map { Transaction.fromAPI($0) }
+
+            var filtered = allTransactions
+            if let direction = direction {
+                filtered = allTransactions.filter {
+                    direction == .income ? $0.category.isIncome : !$0.category.isIncome
+                }
+            }
+
+            transactions = applySort(filtered)
+            return
+        }
+        
         isLoading = true
         defer { isLoading = false }
 
@@ -108,7 +132,6 @@ final class HistoryViewModel: ObservableObject {
             do {
                 try await loadTransactions()
             } catch {
-                // Ошибка при обновлении периода: транзакции будут загружены позже
             }
         }
     }
