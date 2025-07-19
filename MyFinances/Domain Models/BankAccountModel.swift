@@ -29,3 +29,34 @@ extension BankAccount {
         }
     }
 }
+
+// MARK: - AccountResponse для API
+struct AccountResponse: Codable {
+    let id: Int
+    let name: String
+    let balance: String
+    let currency: String
+    let incomeStats: [StatItem]?
+    let expenseStats: [StatItem]?
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct StatItem: Codable {
+    let categoryId: Int
+    let categoryName: String
+    let emoji: String
+    let amount: String
+}
+
+struct AccountCreateRequest: Codable {
+    let name: String
+    let balance: String
+    let currency: String
+}
+
+struct AccountUpdateRequest: Codable {
+    let name: String
+    let balance: String
+    let currency: String
+}

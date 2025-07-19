@@ -10,7 +10,7 @@ import SwiftUI
 
 @MainActor
 final class MyAccountViewModel: ObservableObject {
-    private let accountService = BankAccountsService()
+    private let accountService = BankAccountsService.create()
     
     @Published var account: BankAccount? = nil
     @Published var isLoading = false
@@ -38,19 +38,20 @@ final class MyAccountViewModel: ObservableObject {
     
     init() {
         Task {
-            await loadAccount()
+            do {
+                try await loadAccount()
+            } catch {
+                // Ошибка при инициализации - аккаунт будет загружен позже
+            }
         }
     }
     
-    func loadAccount() async {
+    func loadAccount() async throws {
         isLoading = true
-        do {
-            let acc = try await accountService.fetchAccount()
-            account = acc
-        } catch {
-            print("Ошибка при загрузке аккаунта: \(error)")
-        }
-        isLoading = false
+        defer { isLoading = false }
+        
+        let acc = try await accountService.fetchAccount()
+        account = acc
     }
     
     func startEditing() {
@@ -74,23 +75,28 @@ final class MyAccountViewModel: ObservableObject {
         tempCurrency = value
     }
     
-    func saveChanges() async {
+    func saveChanges() async throws {
         guard let account = account else { return }
         isLoading = true
-        do {
-            let newBalance = Decimal(string: tempBalance) ?? account.balance
-            let updated = try await accountService.updateAccount(account: account, balance: newBalance, currency: tempCurrency)
-            self.account = updated
-            isEditingMode = false
-        } catch {
-            print("Ошибка при сохранении: \(error)")
-        }
-        isLoading = false
+        defer { isLoading = false }
+        
+        let request = AccountUpdateRequest(
+            name: account.name,
+            balance: tempBalance,
+            currency: tempCurrency
+        )
+        let updated = try await accountService.updateAccount(id: account.id, request: request)
+        self.account = updated
+        isEditingMode = false
     }
     
     @MainActor
     func refresh() async {
-        await loadAccount()
+        do {
+            try await loadAccount()
+        } catch {
+            // Ошибка при обновлении - пользователь увидит это в UI
+        }
     }
     
     func toggleBalanceHidden() {

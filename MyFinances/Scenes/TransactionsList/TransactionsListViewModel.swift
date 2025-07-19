@@ -23,26 +23,31 @@ final class TransactionsListViewModel: ObservableObject {
     }
     
     // MARK: – Services
-    private let service = TransactionsService()
+    private let service = TransactionsService.create()
     let direction: Direction
+    let accountId: Int
     
     // MARK: – Init
-    init(direction: Direction) { self.direction = direction }
+    init(direction: Direction, accountId: Int) {
+        self.direction = direction
+        self.accountId = accountId
+    }
     
     // MARK: – Data
-    func loadTransactions() async {
+    func loadTransactions() async throws {
         isLoading = true
         defer { isLoading = false }
-        do {
-            guard let end = Date.endOfToday else { return }
-            let all = try await service.fetchTransactions(from: .startOfToday, to: end)
-            let filtered = all.filter {
-                direction == .income ? $0.category.isIncome : !$0.category.isIncome
-            }
-            transactions = applySort(filtered)
-        } catch {
-            transactions = []
+        
+        let start = Date.startOfToday
+        let end = Date.endOfToday ?? Date()
+        let startStr = DateFormatterFactory.yyyyMMdd.string(from: start)
+        let endStr = DateFormatterFactory.yyyyMMdd.string(from: end)
+        let responses = try await service.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+        let all = responses.map { Transaction.fromAPI($0) }
+        let filtered = all.filter {
+            direction == .income ? $0.category.isIncome : !$0.category.isIncome
         }
+        transactions = applySort(filtered)
     }
     
     // MARK: – Helpers

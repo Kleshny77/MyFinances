@@ -12,8 +12,9 @@ import Ifrit
 class СategoriesViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var searchText: String = ""
+    @Published var isLoading = false
 
-    private let service = CategoriesService()
+    private let service = CategoriesService.create()
     
     var filteredCategories: [Category] {
         guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -26,11 +27,24 @@ class СategoriesViewModel: ObservableObject {
         return categories.filter { matchedNames.contains($0.name) }
     }
     
-    func loadCategories() async {
+    func loadCategories() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         do {
             categories = try await service.fetchCategories()
         } catch {
-            print("Error loading categories: \(error)")
+            categories = []
+        }
+    }
+
+    init() {
+        Task {
+            do {
+                try await loadCategories()
+            } catch {
+                // Ошибка при инициализации - категории будут загружены позже
+            }
         }
     }
 }

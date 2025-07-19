@@ -37,3 +37,17 @@ extension BankAccount: JSONSerializable {
         )
     }
 }
+
+extension BankAccount {
+    static func fromAPI(_ api: AccountResponse) -> BankAccount {
+        BankAccount(
+            id: api.id,
+            userId: 0, // userId не приходит из API
+            name: api.name,
+            balance: Decimal(string: api.balance) ?? 0,
+            currency: api.currency,
+            createdAt: DateFormatterFactory.iso8601.date(from: api.createdAt) ?? Date(),
+            updatedAt: DateFormatterFactory.iso8601.date(from: api.updatedAt) ?? Date()
+        )
+    }
+}

@@ -11,39 +11,52 @@ import SwiftUI
 // MARK: - Экраны истории. Задаются параметрически
 struct HistoryView: View {
     @StateObject var viewModel: HistoryViewModel
-    @State private var showAnalysis = false
+    var currency: String = "RUB"
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     
     var body: some View {
-        List {
-            sort
-            datePicker
-            transactionsList
-        }
-        .navigationTitle("Моя история")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    AnalysisView(
-                        start: viewModel.startDate,
-                        end:   viewModel.endDate
-                    )
-                    .navigationTitle("Анализ")
-                    .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    Image(systemName: "document")
+        NavigationView {
+            ZStack {
+                if viewModel.isLoading {
+                    VStack {
+                        ProgressView("Загрузка истории...")
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(1.2)
+                        Text("Пожалуйста, подождите")
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
+                } else {
+                    List {
+                        datePicker
+                        transactionsList
+                    }
+                    .refreshable {
+                        await loadTransactionsWithErrorHandling()
+                    }
                 }
             }
+            .navigationTitle("История")
         }
-        .task { await viewModel.loadTransactions() }
+        .task {
+            await loadTransactionsWithErrorHandling()
+        }
+        .alert("Ошибка", isPresented: $showErrorAlert) {
+            Button("Ок", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
     }
     
-    private var sort: some View {
-        Picker("Сортировка", selection: $viewModel.sortOption) {
-            ForEach(TransactionsListViewModel.SortOption.allCases) { option in
-                Text(option.rawValue).tag(option)
-            }
-            .pickerStyle(.segmented)
-            .listRowInsets(.init())
+    private func loadTransactionsWithErrorHandling() async {
+        do {
+            try await viewModel.loadTransactions()
+        } catch {
+            errorMessage = "Ошибка загрузки истории: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
     
@@ -59,7 +72,7 @@ struct HistoryView: View {
             })
             .listRowInsets(EdgeInsets())
             
-            AmountCellView(viewModel: AmountCellViewModel(transactions: viewModel.transactions))
+            AmountCellView(viewModel: AmountCellViewModel(transactions: viewModel.transactions, currency: currency))
                 .listRowInsets(EdgeInsets())
         }
     }
@@ -79,6 +92,3 @@ struct HistoryView: View {
     }
 }
 
-#Preview {
-    TransactionsListView(viewModel: TransactionsListViewModel(direction: .income))
-}

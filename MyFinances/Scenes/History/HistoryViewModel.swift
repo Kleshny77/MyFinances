@@ -41,21 +41,30 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
-    private let service = TransactionsService()
+    private let service = TransactionsService.create()
+    let accountId: Int
     let direction: Direction?
 
     init(
         direction: Direction?,
+        accountId: Int,
         initialPeriod: HistoryPeriod = HistoryPeriod(
             start: Calendar.current.date(byAdding: .month, value: -1, to: .now) ?? .now,
             end: Date.now
         )
     ) {
         self.direction = direction
+        self.accountId = accountId
         self.startDate = initialPeriod.start
         self.endDate = initialPeriod.end
 
-        Task { await loadTransactions() }
+        Task {
+            do {
+                try await loadTransactions()
+            } catch {
+                // Ошибка при инициализации - транзакции будут загружены позже
+            }
+        }
     }
 
     var totalAmount: Decimal {
@@ -75,30 +84,32 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
-    func loadTransactions() async {
+    func loadTransactions() async throws {
         isLoading = true
         defer { isLoading = false }
 
-        do {
-            let allTransactions = try await service.fetchTransactions(
-                from: Date.startOfDay(for: startDate),
-                to: Date.endOfDay(for: endDate)
-            )
+        let startStr = DateFormatterFactory.yyyyMMdd.string(from: Date.startOfDay(for: startDate))
+        let endStr = DateFormatterFactory.yyyyMMdd.string(from: Date.endOfDay(for: endDate))
+        let responses = try await service.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+        let allTransactions = responses.map { Transaction.fromAPI($0) }
 
-            var filtered = allTransactions
-            if let direction = direction {
-                filtered = allTransactions.filter {
-                    direction == .income ? $0.category.isIncome : !$0.category.isIncome
-                }
+        var filtered = allTransactions
+        if let direction = direction {
+            filtered = allTransactions.filter {
+                direction == .income ? $0.category.isIncome : !$0.category.isIncome
             }
-
-            transactions = applySort(filtered)
-        } catch {
-            transactions = []
         }
+
+        transactions = applySort(filtered)
     }
 
     private func updatePeriod() {
-        Task { await loadTransactions() }
+        Task { 
+            do {
+                try await loadTransactions()
+            } catch {
+                // Ошибка при обновлении периода: транзакции будут загружены позже
+            }
+        }
     }
 }
