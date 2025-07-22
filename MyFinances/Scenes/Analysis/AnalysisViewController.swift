@@ -17,7 +17,26 @@ final class AnalysisViewController: UIViewController {
     }
 
     private var operations: [Transaction] = []
-    private let service = TransactionsService()
+    private var service: TransactionsService?
+    private let accountId: Int
+
+    init(accountId: Int) {
+        self.accountId = accountId
+        super.init(nibName: nil, bundle: nil)
+        
+        Task {
+            do {
+                try await initializeService()
+            } catch {
+                service = TransactionsService.create()
+            }
+        }
+    }
+    
+    private func initializeService() async throws {
+        service = await TransactionsService.createWithLocalStorage()
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -56,13 +75,22 @@ final class AnalysisViewController: UIViewController {
                 of: periodEnd
             )!
             do {
-                operations = try await service.fetchTransactions(
-                    from: startOfDay, to: endOfDay
-                )
+                guard let service = service else {
+                    let fallbackService = TransactionsService.create()
+                    let startStr = DateFormatterFactory.yyyyMMdd.string(from: startOfDay)
+                    let endStr = DateFormatterFactory.yyyyMMdd.string(from: endOfDay)
+                    let responses = try await fallbackService.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+                    operations = responses.map { Transaction.fromAPI($0) }
+                    return
+                }
+                
+                let startStr = DateFormatterFactory.yyyyMMdd.string(from: startOfDay)
+                let endStr = DateFormatterFactory.yyyyMMdd.string(from: endOfDay)
+                let responses = try await service.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+                operations = responses.map { Transaction.fromAPI($0) }
             } catch {
                 operations = []
             }
-            // обязательно на главном
             await MainActor.run {
                 tableView.reloadData()
             }

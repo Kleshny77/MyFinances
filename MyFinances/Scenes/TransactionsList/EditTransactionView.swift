@@ -15,12 +15,32 @@ struct EditTransactionView: View {
     @FocusState private var isAmountFocused: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            title
-            form
+        ZStack {
+            VStack(spacing: 0) {
+                header
+                title
+                form
+            }
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            
+            if viewModel.isLoading {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                
+                VStack {
+                    ProgressView("Сохранение...")
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .scaleEffect(1.2)
+                    Text("Пожалуйста, подождите")
+                        .foregroundColor(.white)
+                        .padding(.top, 8)
+                }
+                .padding(20)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .shadow(radius: 10)
+            }
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .alert(viewModel.alertMessage, isPresented: $viewModel.showAlert) {
             Button("Ок", role: .cancel) { }
         }
@@ -126,7 +146,9 @@ private extension EditTransactionView {
             Button(role: .destructive) {
                 Task {
                     await viewModel.delete()
-                    dismiss()
+                    if viewModel.deleteCompleted {
+                        dismiss()
+                    }
                 }
             } label: {
                 HStack {

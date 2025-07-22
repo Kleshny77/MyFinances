@@ -10,9 +10,10 @@ import SwiftUI
 struct AnalysisView: UIViewControllerRepresentable {
     let start: Date
     let end: Date
+    let accountId: Int
     
     func makeUIViewController(context: Context) -> AnalysisViewController {
-        return AnalysisViewController()
+        return AnalysisViewController(accountId: accountId)
     }
     
     func updateUIViewController(_ uiViewController: AnalysisViewController, context: Context) {

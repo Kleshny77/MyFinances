@@ -15,12 +15,27 @@ enum DateFormatterFactory {
         return f
     }()
     
+    static let iso8601Full: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
+    
     static func date(from isoString: String) -> Date? {
         return iso8601.date(from: isoString)
     }
+    
+    static let yyyyMMdd: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
 }
 
-// MARK: - Фабрика форматтеров чисел 
+// MARK: - Фабрика форматтеров чисел
 enum NumberFormatterFactory {
     static let decimalSmart: NumberFormatter = {
         let formatter = NumberFormatter()

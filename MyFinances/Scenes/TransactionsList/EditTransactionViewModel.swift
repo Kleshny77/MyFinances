@@ -10,25 +10,29 @@ import SwiftUI
 
 @MainActor
 final class EditTransactionViewModel: ObservableObject {
-    private let originalTransaction: Transaction?
-    let isEditing: Bool
-    let direction: Direction
-    
-    private let transactionsService = TransactionsService()
-    private let categoriesService   = CategoriesService()
-    private let bankAccountsService = BankAccountsService()
-    
-    @Published var selectedCategory: Category?
     @Published var amount: String = ""
-    @Published var selectedDate: Date = Date()
     @Published var comment: String = ""
-    @Published var categories: [Category] = []
-    @Published var showCategoryPicker = false
+    @Published var selectedDate: Date = Date()
+    @Published var selectedCategory: Category?
+    @Published var isLoading = false
+    @Published var saveCompleted = false
     @Published var showAlert = false
     @Published var alertMessage = ""
-    @Published var saveCompleted = false
     
-    var onSave:   (() -> Void)?
+    private var transactionsService: TransactionsService?
+    private let bankAccountsService = BankAccountsService.create()
+    private let categoriesService = CategoriesService.create()
+    
+    let originalTransaction: Transaction?
+    let isEditing: Bool
+    let direction: Direction
+    let accountId: Int
+    
+    @Published var categories: [Category] = []
+    @Published var showCategoryPicker = false
+    @Published var deleteCompleted = false
+    
+    var onSave: (() -> Void)?
     var onDelete: (() -> Void)?
     
     var isValid: Bool {
@@ -41,10 +45,11 @@ final class EditTransactionViewModel: ObservableObject {
     let commentPlaceholder = "Комментарий"
     var deleteButtonTitle: String { direction == .income ? "Удалить доход" : "Удалить расход" }
     
-    init(transaction: Transaction?, direction: Direction) {
+    init(transaction: Transaction?, direction: Direction, accountId: Int) {
         self.originalTransaction = transaction
         self.isEditing = transaction != nil
         self.direction = direction
+        self.accountId = accountId
         
         if let trx = transaction {
             selectedCategory = trx.category
@@ -53,16 +58,41 @@ final class EditTransactionViewModel: ObservableObject {
             comment = trx.comment ?? ""
         }
         
-        Task { await loadCategories() }
+        Task {
+            do {
+                try await initializeService()
+                await loadCategories()
+            } catch {
+                transactionsService = TransactionsService.create()
+                await loadCategories()
+            }
+        }
     }
     
+    private func initializeService() async throws {
+        transactionsService = await TransactionsService.createWithLocalStorage()
+    }
+
     func loadCategories() async {
-        categories = (try? await categoriesService.fetchCategories(direction: direction)) ?? []
+        do {
+            let allCategories = try await categoriesService.fetchCategories()
+            switch direction {
+            case .income:
+                categories = allCategories.filter { $0.isIncome }
+            case .outcome:
+                categories = allCategories.filter { !$0.isIncome }
+            }
+        } catch {
+            categories = []
+        }
     }
-    
+
     func save() async {
         guard isValid else { return showAlert("Заполните поля корректно") }
-        
+
+        isLoading = true
+        defer { isLoading = false }
+
         do {
             let account: BankAccount
             if let trx = originalTransaction {
@@ -70,45 +100,85 @@ final class EditTransactionViewModel: ObservableObject {
             } else {
                 account = try await bankAccountsService.fetchAccount()
             }
-            
+
             let amountValue = Decimal(
                 string: amount.replacingOccurrences(of: Locale.current.decimalSeparator ?? ",", with: ".")
             ) ?? 0
-            
-            let trx = Transaction(
-                id: originalTransaction?.id ?? Int(Date().timeIntervalSince1970),
-                account: account,
-                category: selectedCategory!,
-                amount: amountValue,
-                transactionDate: selectedDate,
-                comment: comment,
-                createdAt: originalTransaction?.createdAt ?? Date(),
-                updatedAt: Date()
+            let amountString = String(format: "%.2f", NSDecimalNumber(decimal: amountValue).doubleValue)
+
+            let request = TransactionRequest(
+                accountId: account.id,
+                categoryId: selectedCategory!.id,
+                amount: amountString,
+                transactionDate: DateFormatterFactory.iso8601Full.string(from: selectedDate),
+                comment: comment.isEmpty ? " " : comment
             )
-            
-            if isEditing {
-                try await transactionsService.updateTransaction(transaction: trx)
-            } else {
-                try await transactionsService.createTransaction(transaction: trx)
+
+            guard let transactionsService = transactionsService else {
+                let fallbackService = TransactionsService.create()
+                if isEditing, let id = originalTransaction?.id {
+                    try await fallbackService.updateTransaction(id: id, request: request)
+                } else {
+                    try await fallbackService.createTransaction(request: request)
+                }
+                saveCompleted = true
+                onSave?()
+                return
             }
             
+            if isEditing, let id = originalTransaction?.id {
+                try await transactionsService.updateTransaction(id: id, request: request)
+            } else {
+                try await transactionsService.createTransaction(request: request)
+            }
+
             saveCompleted = true
             onSave?()
+        
         } catch {
-            showAlert("Ошибка: \(error.localizedDescription)")
+            if let networkError = error as? NetworkError {
+                switch networkError {
+                case .httpError(let code, _):
+                    showAlert("Ошибка сервера: \(code)")
+                case .decodingFailed(_):
+                    saveCompleted = true
+                    onSave?()
+                case .encodingFailed(_):
+                    showAlert("Ошибка кодирования данных")
+                case .invalidResponse:
+                    showAlert("Неверный ответ сервера")
+                case .network(let err):
+                    showAlert("Ошибка сети: \(err.localizedDescription)")
+                }
+            } else {
+                showAlert("Ошибка: \(error.localizedDescription)")
+            }
         }
     }
-    
+
     func delete() async {
         guard let id = originalTransaction?.id else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
         do {
+            guard let transactionsService = transactionsService else {
+                let fallbackService = TransactionsService.create()
+                try await fallbackService.deleteTransaction(id: id)
+                deleteCompleted = true
+                onDelete?()
+                return
+            }
+            
             try await transactionsService.deleteTransaction(id: id)
+            deleteCompleted = true
             onDelete?()
         } catch {
             showAlert("Ошибка: \(error.localizedDescription)")
         }
     }
-    
+
     func sanitizeAmountInput(_ input: String) {
         let sep = Locale.current.decimalSeparator ?? ","
         let allowed = Set("0123456789" + sep)
@@ -123,7 +193,7 @@ final class EditTransactionViewModel: ObservableObject {
         }
         amount = out
     }
-    
+
     private func showAlert(_ message: String) {
         alertMessage = message
         showAlert = true

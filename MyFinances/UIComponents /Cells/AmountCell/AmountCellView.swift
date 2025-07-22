@@ -35,7 +35,7 @@ struct AmountCellView: View {
     }
     
     private var currency: some View {
-        Text(viewModel.currencySymbol ?? CellsConstants.defaultCurrency)
+        Text(viewModel.currencySymbol)
     }
 }
 

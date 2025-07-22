@@ -41,21 +41,36 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
-    private let service = TransactionsService()
+    private var service: TransactionsService?
+    let accountId: Int
     let direction: Direction?
 
     init(
         direction: Direction?,
+        accountId: Int,
         initialPeriod: HistoryPeriod = HistoryPeriod(
             start: Calendar.current.date(byAdding: .month, value: -1, to: .now) ?? .now,
             end: Date.now
         )
     ) {
         self.direction = direction
+        self.accountId = accountId
         self.startDate = initialPeriod.start
         self.endDate = initialPeriod.end
 
-        Task { await loadTransactions() }
+        Task {
+            do {
+                try await initializeService()
+                try await loadTransactions()
+            } catch {
+                service = TransactionsService.create()
+                try await loadTransactions()
+            }
+        }
+    }
+    
+    private func initializeService() async throws {
+        service = await TransactionsService.createWithLocalStorage()
     }
 
     var totalAmount: Decimal {
@@ -75,15 +90,13 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
-    func loadTransactions() async {
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            let allTransactions = try await service.fetchTransactions(
-                from: Date.startOfDay(for: startDate),
-                to: Date.endOfDay(for: endDate)
-            )
+    func loadTransactions() async throws {
+        guard let service = service else {
+            let fallbackService = TransactionsService.create()
+            let startStr = DateFormatterFactory.yyyyMMdd.string(from: Date.startOfDay(for: startDate))
+            let endStr = DateFormatterFactory.yyyyMMdd.string(from: Date.endOfDay(for: endDate))
+            let responses = try await fallbackService.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+            let allTransactions = responses.map { Transaction.fromAPI($0) }
 
             var filtered = allTransactions
             if let direction = direction {
@@ -93,12 +106,33 @@ final class HistoryViewModel: ObservableObject {
             }
 
             transactions = applySort(filtered)
-        } catch {
-            transactions = []
+            return
         }
+        
+        isLoading = true
+        defer { isLoading = false }
+
+        let startStr = DateFormatterFactory.yyyyMMdd.string(from: Date.startOfDay(for: startDate))
+        let endStr = DateFormatterFactory.yyyyMMdd.string(from: Date.endOfDay(for: endDate))
+        let responses = try await service.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
+        let allTransactions = responses.map { Transaction.fromAPI($0) }
+
+        var filtered = allTransactions
+        if let direction = direction {
+            filtered = allTransactions.filter {
+                direction == .income ? $0.category.isIncome : !$0.category.isIncome
+            }
+        }
+
+        transactions = applySort(filtered)
     }
 
     private func updatePeriod() {
-        Task { await loadTransactions() }
+        Task { 
+            do {
+                try await loadTransactions()
+            } catch {
+            }
+        }
     }
 }

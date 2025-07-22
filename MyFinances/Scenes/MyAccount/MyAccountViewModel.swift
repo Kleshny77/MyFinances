@@ -10,7 +10,7 @@ import SwiftUI
 
 @MainActor
 final class MyAccountViewModel: ObservableObject {
-    private let accountService = BankAccountsService()
+    private var accountService: BankAccountsService?
     
     @Published var account: BankAccount? = nil
     @Published var isLoading = false
@@ -38,19 +38,31 @@ final class MyAccountViewModel: ObservableObject {
     
     init() {
         Task {
-            await loadAccount()
+            do {
+                try await initializeService()
+                try await loadAccount()
+            } catch {
+            }
         }
     }
     
-    func loadAccount() async {
-        isLoading = true
-        do {
-            let acc = try await accountService.fetchAccount()
+    private func initializeService() async throws {
+        accountService = await BankAccountsService.createWithLocalStorage()
+    }
+    
+    func loadAccount() async throws {
+        guard let accountService = accountService else {
+            let fallbackService = BankAccountsService.create()
+            let acc = try await fallbackService.fetchAccount()
             account = acc
-        } catch {
-            print("Ошибка при загрузке аккаунта: \(error)")
+            return
         }
-        isLoading = false
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        let acc = try await accountService.fetchAccount()
+        account = acc
     }
     
     func startEditing() {
@@ -74,23 +86,28 @@ final class MyAccountViewModel: ObservableObject {
         tempCurrency = value
     }
     
-    func saveChanges() async {
+    func saveChanges() async throws {
         guard let account = account else { return }
         isLoading = true
-        do {
-            let newBalance = Decimal(string: tempBalance) ?? account.balance
-            let updated = try await accountService.updateAccount(account: account, balance: newBalance, currency: tempCurrency)
-            self.account = updated
-            isEditingMode = false
-        } catch {
-            print("Ошибка при сохранении: \(error)")
-        }
-        isLoading = false
+        defer { isLoading = false }
+        
+        let request = AccountUpdateRequest(
+            name: account.name,
+            balance: tempBalance,
+            currency: tempCurrency
+        )
+        guard let accountService = accountService else { return }
+        let updated = try await accountService.updateAccount(id: account.id, request: request)
+        self.account = updated
+        isEditingMode = false
     }
     
     @MainActor
     func refresh() async {
-        await loadAccount()
+        do {
+            try await loadAccount()
+        } catch {
+        }
     }
     
     func toggleBalanceHidden() {

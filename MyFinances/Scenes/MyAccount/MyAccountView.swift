@@ -161,30 +161,51 @@ struct MyAccountView: View {
     @StateObject var viewModel: MyAccountViewModel
     @FocusState private var isBalanceFocused: Bool
     @State private var showingCurrencySheet = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
-            List {
-                balance
-                currency
-            }
-            .refreshable {
-                await viewModel.refresh()
+            ZStack {
+                if viewModel.isLoading {
+                    VStack {
+                        ProgressView("Загрузка аккаунта...")
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(1.2)
+                        Text("Пожалуйста, подождите")
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
+                } else {
+                    List {
+                        balance
+                        currency
+                    }
+                    .refreshable {
+                        await loadAccountWithErrorHandling()
+                    }
+                }
             }
             .navigationTitle("Мой счет")
             .listSectionSpacing(16)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if viewModel.isEditingMode {
-                        Button("Сохранить") {
-                            Task { await viewModel.saveChanges() }
+                    if !viewModel.isLoading {
+                        if viewModel.isEditingMode {
+                            Button("Сохранить") {
+                                Task { 
+                                    await saveChangesWithErrorHandling()
+                                }
+                            }
+                            .tint(.supporting)
+                        } else {
+                            Button("Редактировать") {
+                                viewModel.startEditing()
+                            }
+                            .tint(.supporting)
                         }
-                        .tint(.supporting)
-                    } else {
-                        Button("Редактировать") {
-                            viewModel.startEditing()
-                        }
-                        .tint(.supporting)
                     }
                 }
             }
@@ -202,6 +223,32 @@ struct MyAccountView: View {
         }
         .onShake {
             viewModel.toggleBalanceHidden()
+        }
+        .task {
+            await loadAccountWithErrorHandling()
+        }
+        .alert("Ошибка", isPresented: $showErrorAlert) {
+            Button("Ок", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+    }
+    
+    private func loadAccountWithErrorHandling() async {
+        do {
+            try await viewModel.loadAccount()
+        } catch {
+            errorMessage = "Ошибка загрузки аккаунта: \(error.localizedDescription)"
+            showErrorAlert = true
+        }
+    }
+    
+    private func saveChangesWithErrorHandling() async {
+        do {
+            try await viewModel.saveChanges()
+        } catch {
+            errorMessage = "Ошибка сохранения: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
     
