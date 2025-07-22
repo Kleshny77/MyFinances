@@ -11,116 +11,46 @@ struct TransactionsListView: View {
     @StateObject var viewModel: TransactionsListViewModel
     @State private var editingTransaction: Transaction?
     @State private var showCreateSheet = false
-    @State private var showErrorAlert = false
-    @State private var errorMessage = ""
-    var onTransactionChanged: (() -> Void)? = nil
-    var currency: String = "RUB"
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                if viewModel.isLoading {
-                    VStack {
-                        ProgressView("Загрузка транзакций...")
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(1.2)
-                        Text("Пожалуйста, подождите")
-                            .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
-                } else {
-                    VStack(spacing: 0) {
-                        list
-                        Spacer()
-                    }
-                }
-                
-                if !viewModel.isLoading {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            plusButton
-                                .padding(.bottom, TransactionsListConstants.plusButtonBottom)
-                                .padding(.trailing, TransactionsListConstants.plusButtonTrailing)
-                        }
-                    }
-                }
+            ZStack(alignment: .bottomTrailing) {
+                list
+                plusButton
             }
             .navigationTitle(viewModel.navigationTitle)
             
-            .toolbar {
+            .toolbar(content: {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if !viewModel.isLoading {
-                        historyButton
-                    }
+                    historyButton
                 }
-            }
+            })
             
-            .task { 
-                await loadTransactionsWithErrorHandling()
-            }
+            .task { await viewModel.loadTransactions() }
         }
         
         .sheet(isPresented: $showCreateSheet, onDismiss: {
-            Task { 
-                await loadTransactionsWithErrorHandling()
-            }
-            onTransactionChanged?()
+            Task { await viewModel.loadTransactions() }
         }) {
             EditTransactionView(
-                viewModel: createEditTransactionViewModel(transaction: nil)
+                viewModel: EditTransactionViewModel(
+                    transaction: nil,
+                    direction: viewModel.direction
+                )
             )
         }
         
         .sheet(item: $editingTransaction, onDismiss: {
-            Task { 
-                await loadTransactionsWithErrorHandling()
-            }
-            onTransactionChanged?()
+            Task { await viewModel.loadTransactions() }
         }) { trx in
             EditTransactionView(
-                viewModel: createEditTransactionViewModel(transaction: trx)
+                viewModel: EditTransactionViewModel(
+                    transaction: trx,
+                    direction: viewModel.direction
+                )
             )
         }
-        
-        .alert("Ошибка", isPresented: $showErrorAlert) {
-            Button("Ок", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
-        }
-    }
-    
-    private func loadTransactionsWithErrorHandling() async {
-        do {
-            try await viewModel.loadTransactions()
-        } catch {
-            errorMessage = "Ошибка загрузки транзакций: \(error.localizedDescription)"
-            showErrorAlert = true
-        }
-    }
-    
-    private func createEditTransactionViewModel(transaction: Transaction?) -> EditTransactionViewModel {
-        let viewModel = EditTransactionViewModel(
-            transaction: transaction,
-            direction: self.viewModel.direction,
-            accountId: self.viewModel.accountId
-        )
-        viewModel.onSave = {
-            Task { 
-                await self.loadTransactionsWithErrorHandling()
-            }
-            self.onTransactionChanged?()
-        }
-        viewModel.onDelete = {
-            Task { 
-                await self.loadTransactionsWithErrorHandling()
-            }
-            self.onTransactionChanged?()
-        }
-        return viewModel
+        .task { await viewModel.loadTransactions() }
     }
 }
 
@@ -145,7 +75,7 @@ private extension TransactionsListView {
     
     var amountSection: some View {
         Section {
-            AmountCellView(viewModel: AmountCellViewModel(transactions: viewModel.transactions, currency: currency))
+            AmountCellView(viewModel: AmountCellViewModel(transactions: viewModel.transactions))
                 .listRowInsets(EdgeInsets())
         }
     }
@@ -173,7 +103,7 @@ private extension TransactionsListView {
     
     var historyButton: some View {
         NavigationLink(
-            destination: HistoryView(viewModel: HistoryViewModel(direction: viewModel.direction, accountId: viewModel.accountId), currency: currency)
+            destination: HistoryView(viewModel: HistoryViewModel(direction: viewModel.direction))
         ) {
             Image(TransactionsListConstants.historyImageName)
         }
@@ -187,5 +117,7 @@ private extension TransactionsListView {
                 .background(Color.accentColor)
                 .clipShape(Circle())
         }
+        .padding(.bottom, TransactionsListConstants.plusButtonBottom)
+        .padding(.trailing, TransactionsListConstants.plusButtonTrailing)
     }
 }

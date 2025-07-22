@@ -6,14 +6,14 @@
 //
 
 import Foundation
+import Ifrit
 
 @MainActor
 class СategoriesViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var searchText: String = ""
-    @Published var isLoading = false
 
-    private var service: CategoriesService?
+    private let service = CategoriesService()
     
     var filteredCategories: [Category] {
         guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -26,34 +26,10 @@ class СategoriesViewModel: ObservableObject {
         return categories.filter { matchedNames.contains($0.name) }
     }
     
-    init() {
-        Task {
-            do {
-                try await initializeService()
-                try await loadCategories()
-            } catch {
-            }
-        }
-    }
-    
-    private func initializeService() async throws {
-        service = await CategoriesService.createWithLocalStorage()
-    }
-    
-    func loadCategories() async throws {
-        guard let service = service else {
-            let fallbackService = CategoriesService.create()
-            categories = try await fallbackService.fetchCategories()
-            return
-        }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
+    func loadCategories() async {
         do {
             categories = try await service.fetchCategories()
         } catch {
-            categories = []
-        }
+            print("Error loading categories: \(error)")
     }
 }

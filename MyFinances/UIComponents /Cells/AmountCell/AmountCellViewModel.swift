@@ -9,20 +9,12 @@ import Foundation
 
 struct AmountCellViewModel {
     let totalAmount: String
-    let currencySymbol: String
+    let currencySymbol: String?
 
-    init(transactions: [Transaction], currency: String = "RUB") {
+    init(transactions: [Transaction]) {
         let amount = transactions.reduce(Decimal(0)) { $0 + $1.amount }
         self.totalAmount = amount.formattedSmart
 
-        // Определяем символ валюты
-        let symbol: String
-        switch currency {
-        case "RUB": symbol = "₽"
-        case "USD": symbol = "$"
-        case "EUR": symbol = "€"
-        default: symbol = "?"
-        }
-        self.currencySymbol = symbol
+        self.currencySymbol = transactions.first?.account.currencySymbol
     }
 }

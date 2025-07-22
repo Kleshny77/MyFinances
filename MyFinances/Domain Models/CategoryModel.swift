@@ -20,20 +20,3 @@ struct Category: Equatable {
     let emoji: Character
     let isIncome: Bool
 }
-
-// MARK: - Модель категории для API (JSON)
-struct CategoryAPI: Codable {
-    let id: Int
-    let name: String
-    let emoji: String
-    let isIncome: Bool
-    
-    func toDomain() -> Category {
-        return Category(
-            id: id,
-            name: name,
-            emoji: emoji.first ?? "📁",
-            isIncome: isIncome
-        )
-    }
-}

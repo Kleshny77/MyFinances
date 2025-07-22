@@ -23,58 +23,26 @@ final class TransactionsListViewModel: ObservableObject {
     }
     
     // MARK: – Services
-    private var service: TransactionsService?
+    private let service = TransactionsService()
     let direction: Direction
-    let accountId: Int
     
     // MARK: – Init
-    init(direction: Direction, accountId: Int) {
-        self.direction = direction
-        self.accountId = accountId
-        
-        Task {
-            do {
-                try await initializeService()
-            } catch {
-                service = TransactionsService.create()
-            }
-        }
-    }
-    
-    private func initializeService() async throws {
-        service = await TransactionsService.createWithLocalStorage()
-    }
+    init(direction: Direction) { self.direction = direction }
     
     // MARK: – Data
-    func loadTransactions() async throws {
-        guard let service = service else {
-            let fallbackService = TransactionsService.create()
-            let start = Date.startOfToday
-            let end = Date.endOfToday ?? Date()
-            let startStr = DateFormatterFactory.yyyyMMdd.string(from: start)
-            let endStr = DateFormatterFactory.yyyyMMdd.string(from: end)
-            let responses = try await fallbackService.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
-            let all = responses.map { Transaction.fromAPI($0) }
+    func loadTransactions() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            guard let end = Date.endOfToday else { return }
+            let all = try await service.fetchTransactions(from: .startOfToday, to: end)
             let filtered = all.filter {
                 direction == .income ? $0.category.isIncome : !$0.category.isIncome
             }
             transactions = applySort(filtered)
-            return
+        } catch {
+            transactions = []
         }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
-        let start = Date.startOfToday
-        let end = Date.endOfToday ?? Date()
-        let startStr = DateFormatterFactory.yyyyMMdd.string(from: start)
-        let endStr = DateFormatterFactory.yyyyMMdd.string(from: end)
-        let responses = try await service.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
-        let all = responses.map { Transaction.fromAPI($0) }
-        let filtered = all.filter {
-            direction == .income ? $0.category.isIncome : !$0.category.isIncome
-        }
-        transactions = applySort(filtered)
     }
     
     // MARK: – Helpers

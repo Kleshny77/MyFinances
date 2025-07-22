@@ -10,50 +10,17 @@ import SwiftUI
 
 struct СategoriesView: View {
     @StateObject var viewModel: СategoriesViewModel
-    @State private var showErrorAlert = false
-    @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
-            ZStack {
-                if viewModel.isLoading {
-                    VStack {
-                        ProgressView("Загрузка категорий...")
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(1.2)
-                        Text("Пожалуйста, подождите")
-                            .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
-                } else {
-                    List {
-                        categories
-                    }
-                }
+            List {
+                categories
             }
             .navigationTitle("Мои статьи")
             .searchable(text: $viewModel.searchText, prompt: "Search")
             .onAppear {
-                Task { 
-                    await loadCategoriesWithErrorHandling()
-                }
+                Task { await viewModel.loadCategories() }
             }
-        }
-        .alert("Ошибка", isPresented: $showErrorAlert) {
-            Button("Ок", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
-        }
-    }
-    
-    private func loadCategoriesWithErrorHandling() async {
-        do {
-            try await viewModel.loadCategories()
-        } catch {
-            errorMessage = "Ошибка загрузки категорий: \(error.localizedDescription)"
-            showErrorAlert = true
         }
     }
     
