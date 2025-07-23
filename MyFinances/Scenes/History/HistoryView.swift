@@ -15,6 +15,7 @@ struct HistoryView: View {
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     @State private var showAnalysis = false
+    @State private var editingTransaction: Transaction? = nil
     
     var body: some View {
         NavigationStack {
@@ -47,6 +48,17 @@ struct HistoryView: View {
                     end: viewModel.endDate,
                     accountId: viewModel.accountId,
                     direction: viewModel.direction ?? .outcome
+                )
+            }
+            .sheet(item: $editingTransaction, onDismiss: {
+                Task { try? await viewModel.loadTransactions() }
+            }) { trx in
+                EditTransactionView(
+                    viewModel: EditTransactionViewModel(
+                        transaction: trx,
+                        direction: viewModel.direction ?? .outcome,
+                        accountId: viewModel.accountId
+                    )
                 )
             }
         }
@@ -89,13 +101,16 @@ struct HistoryView: View {
     private var transactionsList: some View {
         Section(header: Text(TransactionsListConstants.headerTransactionsList)) {
             ForEach(viewModel.transactions, id: \.id) { transaction in
-                if viewModel.direction == .income {
-                    TransactionsListIncomeCellView(transaction: transaction)
-                        .listRowInsets(EdgeInsets())
-                } else {
-                    TransactionsListOutcomeCellView(transaction: transaction)
-                        .listRowInsets(EdgeInsets())
+                Group {
+                    if viewModel.direction == .income {
+                        TransactionsListIncomeCellView(transaction: transaction)
+                    } else {
+                        TransactionsListOutcomeCellView(transaction: transaction)
+                    }
                 }
+                .listRowInsets(EdgeInsets())
+                .contentShape(Rectangle())
+                .onTapGesture { editingTransaction = transaction }
             }
         }
     }
