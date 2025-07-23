@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Ifrit
 
 @MainActor
 class СategoriesViewModel: ObservableObject {
@@ -43,7 +42,6 @@ class СategoriesViewModel: ObservableObject {
             do {
                 try await loadCategories()
             } catch {
-                // Ошибка при инициализации - категории будут загружены позже
             }
         }
     }
