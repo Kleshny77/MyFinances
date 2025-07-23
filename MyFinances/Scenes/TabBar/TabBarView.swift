@@ -8,13 +8,32 @@
 import SwiftUI
 
 // MARK: - Таб бар, отвечающий за переключение между экранами
-struct TabBar: View {
-    @StateObject private var accountViewModel = MyAccountViewModel()
+struct AccountTabContainer: View {
+    @State private var accountViewModel: MyAccountViewModel? = nil
     @State private var isLoading = true
     
-    init() {
-        UITabBar.appearance().backgroundColor = .white
+    var body: some View {
+        Group {
+            if let accountViewModel = accountViewModel, let _ = accountViewModel.account {
+                TabBar(accountViewModel: accountViewModel)
+            } else if isLoading {
+                ProgressView("Загрузка аккаунта...")
+            } else {
+                Text("Не удалось загрузить аккаунт")
+            }
+        }
+        .task {
+            let service = await BankAccountsService.createWithLocalStorage()
+            let vm = MyAccountViewModel(accountService: service)
+            self.accountViewModel = vm
+            await vm.refresh()
+            isLoading = false
+        }
     }
+}
+
+struct TabBar: View {
+    @ObservedObject var accountViewModel: MyAccountViewModel
     
     private func reloadAccount() async {
         await accountViewModel.refresh()
@@ -56,15 +75,7 @@ struct TabBar: View {
                         Image(TabBarConstants.tabFivePath)
                         Text(TabBarConstants.tabFiveName)
                     }
-            } else if isLoading {
-                ProgressView("Загрузка аккаунта...")
-            } else {
-                Text("Не удалось загрузить аккаунт")
             }
-        }
-        .task {
-            await reloadAccount()
-            isLoading = false
         }
     }
 }
@@ -77,5 +88,5 @@ struct MockView: View {
 }
 
 #Preview {
-    TabBar()
+    AccountTabContainer()
 }

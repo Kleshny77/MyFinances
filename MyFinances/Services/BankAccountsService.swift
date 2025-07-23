@@ -40,18 +40,32 @@ final class BankAccountsService {
         do {
             let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts)! 
             let response: [AccountResponse] = try await networkClient.request(url: url)
-            guard let first = response.first else {
-                throw NetworkError.httpError(code: 404, data: Data())
+            if let first = response.first {
+                let account = BankAccount.fromAPI(first)
+                do { try await localStorage.saveAccount(account) } catch { }
+                return account
+            } else {
+                // Если с бэка ничего не пришло — пробуем вернуть локальный аккаунт
+                let local = try await localStorage.getAccount()
+                if let local = local {
+                    return local
+                } else {
+                    // Если и локально ничего нет — создаём дефолтный аккаунт
+                    let defaultAccount = BankAccount(id: 0, userId: 0, name: "Основной счёт", balance: 0, currency: "RUB", createdAt: Date(), updatedAt: Date())
+                    do { try await localStorage.saveAccount(defaultAccount) } catch { }
+                    return defaultAccount
+                }
             }
-            let account = BankAccount.fromAPI(first)
-            do { try await localStorage.saveAccount(account) } catch { }
-            return account
         } catch {
             do {
                 let local = try await localStorage.getAccount()
-                return local
+                if let local = local {
+                    return local
+                } else {
+                    return BankAccount(id: 0, userId: 0, name: "Основной счёт", balance: 0, currency: "RUB", createdAt: Date(), updatedAt: Date())
+                }
             } catch {
-                return nil
+                return BankAccount(id: 0, userId: 0, name: "Основной счёт", balance: 0, currency: "RUB", createdAt: Date(), updatedAt: Date())
             }
         }
     }

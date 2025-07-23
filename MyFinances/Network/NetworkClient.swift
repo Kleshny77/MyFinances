@@ -43,7 +43,6 @@ final class NetworkClient {
             let bodyData = try JSONEncoder().encode(body)
             request.httpBody = bodyData
         } catch {
-            print("Ошибка кодирования тела запроса:", error)
             throw NetworkError.encodingFailed(error)
         }
         return try await performRequestWithBody(request, body: body, responseType: ResponseBody.self)
@@ -53,7 +52,6 @@ final class NetworkClient {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("Ошибка: не удалось получить HTTPURLResponse")
                 throw NetworkError.invalidResponse
             }
             if httpResponse.statusCode == 204 {
@@ -66,18 +64,14 @@ final class NetworkClient {
                 do {
                     return try JSONDecoder().decode(T.self, from: data)
                 } catch {
-                    print("Ошибка декодирования ответа:", error)
                     throw NetworkError.decodingFailed(error)
                 }
             } else {
-                print("HTTP ошибка:", httpResponse.statusCode)
                 throw NetworkError.httpError(code: httpResponse.statusCode, data: data)
             }
         } catch let error as NetworkError {
-            print("NetworkError:", error)
             throw error
         } catch {
-            print("Ошибка сети:", error)
             throw NetworkError.network(error)
         }
     }
@@ -89,31 +83,25 @@ final class NetworkClient {
             mutableRequest.httpBody = bodyData
             mutableRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         } catch {
-            print("Ошибка кодирования тела запроса:", error)
             throw NetworkError.encodingFailed(error)
         }
         do {
             let (data, response) = try await session.data(for: mutableRequest)
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("Ошибка: не удалось получить HTTPURLResponse")
                 throw NetworkError.invalidResponse
             }
             if httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 {
                 do {
                     return try JSONDecoder().decode(R.self, from: data)
                 } catch {
-                    print("Ошибка декодирования ответа:", error)
                     throw NetworkError.decodingFailed(error)
                 }
             } else {
-                print("HTTP ошибка:", httpResponse.statusCode)
                 throw NetworkError.httpError(code: httpResponse.statusCode, data: data)
             }
         } catch let error as NetworkError {
-            print("NetworkError:", error)
             throw error
         } catch {
-            print("Ошибка сети:", error)
             throw NetworkError.network(error)
         }
     }

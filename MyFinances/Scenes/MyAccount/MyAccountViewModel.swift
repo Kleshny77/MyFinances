@@ -10,7 +10,7 @@ import SwiftUI
 
 @MainActor
 final class MyAccountViewModel: ObservableObject {
-    private let accountService = BankAccountsService.create()
+    private let accountService: BankAccountsService
     
     @Published var account: BankAccount? = nil
     @Published var isLoading = false
@@ -36,14 +36,9 @@ final class MyAccountViewModel: ObservableObject {
         }
     }
     
-    init() {
-        Task {
-            do {
-                try await loadAccount()
-            } catch {
-                // Ошибка при инициализации - аккаунт будет загружен позже
-            }
-        }
+    init(accountService: BankAccountsService) {
+        self.accountService = accountService
+        // Убрана автозагрузка аккаунта из конструктора
     }
     
     func loadAccount() async throws {

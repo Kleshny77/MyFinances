@@ -12,7 +12,7 @@ import SwiftUI
 struct MyFinancesApp: App {
     var body: some Scene {
         WindowGroup {
-            TabBar()
+            AccountTabContainer()
         }
     }
 }

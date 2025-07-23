@@ -32,23 +32,17 @@ final class SwiftDataAccountStorage: AccountStorage {
     }
     
     func saveAccount(_ account: BankAccount) async throws {
+        try await clearAll()
         let localAccount = LocalAccount(from: account)
         modelContext.insert(localAccount)
         try modelContext.save()
     }
     
     func updateAccount(_ account: BankAccount) async throws {
-        let descriptor = FetchDescriptor<LocalAccount>()
-        let localAccounts = try modelContext.fetch(descriptor)
-        if let existingAccount = localAccounts.first {
-            existingAccount.name = account.name
-            existingAccount.balance = account.balance
-            existingAccount.currency = account.currency
-            existingAccount.updatedAt = Date()
-            try modelContext.save()
-        } else {
-            try await saveAccount(account)
-        }
+        try await clearAll()
+        let localAccount = LocalAccount(from: account)
+        modelContext.insert(localAccount)
+        try modelContext.save()
     }
     
     func clearAll() async throws {

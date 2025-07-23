@@ -29,9 +29,6 @@ struct HistoryView: View {
                         datePicker
                         transactionsList
                     }
-                    .refreshable {
-                        await loadTransactionsWithErrorHandling()
-                    }
                 }
             }
             .navigationTitle("История")
@@ -79,6 +76,10 @@ struct HistoryView: View {
         do {
             try await viewModel.loadTransactions()
         } catch {
+            if let urlError = error as? URLError, urlError.code == .cancelled {
+                // Не очищаем транзакции и не показываем алерт при отменённом запросе
+                return
+            }
             errorMessage = "Ошибка загрузки истории: \(error.localizedDescription)"
             showErrorAlert = true
         }
