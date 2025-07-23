@@ -106,7 +106,10 @@ struct TransactionsListView: View {
         let viewModel = EditTransactionViewModel(
             transaction: transaction,
             direction: self.viewModel.direction,
-            accountId: self.viewModel.accountId
+            accountId: self.viewModel.accountId,
+            transactionsService: TransactionsService.create(),
+            categoriesService: CategoriesService.create(),
+            bankAccountsService: BankAccountsService.create()
         )
         viewModel.onSave = {
             Task { 

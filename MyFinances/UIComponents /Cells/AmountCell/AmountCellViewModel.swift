@@ -12,7 +12,7 @@ struct AmountCellViewModel {
     let currencySymbol: String
 
     init(transactions: [Transaction], currency: String = "RUB") {
-        let amount = transactions.reduce(Decimal(0)) { $0 + $1.amount }
+        let amount = transactions.totalAmount
         self.totalAmount = amount.formattedSmart
 
         // Определяем символ валюты

@@ -126,7 +126,7 @@ extension AnalysisViewController: MenuDelegate {
     func menu(_ sortingType: SortingType) {
         guard let viewModel = viewModel else { return }
         viewModel.sortingType = sortingType
-        viewModel.sort()
+        viewModel.transactions = viewModel.transactions.sorted(by: sortingType == .date ? .date : .amount)
         tableView.reloadSections([1], with: .none)
     }
 }

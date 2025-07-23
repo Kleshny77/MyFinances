@@ -15,9 +15,9 @@ final class EditTransactionViewModel: ObservableObject {
     let direction: Direction
     private let accountId: Int
 
-    private let transactionsService = TransactionsService.create()
-    private let categoriesService = CategoriesService.create()
-    private let bankAccountsService = BankAccountsService.create()
+    private let transactionsService: TransactionsServiceProtocol
+    private let categoriesService: CategoriesService
+    private let bankAccountsService: BankAccountsService
 
     @Published var selectedCategory: Category?
     @Published var amount: String = ""
@@ -36,8 +36,7 @@ final class EditTransactionViewModel: ObservableObject {
 
     var isValid: Bool {
         guard selectedCategory != nil else { return false }
-        let value = Decimal(string: amount.replacingOccurrences(of: Locale.current.decimalSeparator ?? ",",
-                                                                with: ".")) ?? 0
+        let value = Decimal(string: amount.replacingOccurrences(of: Locale.current.decimalSeparator ?? ",", with: ".")) ?? 0
         return value > 0
     }
 
@@ -45,22 +44,24 @@ final class EditTransactionViewModel: ObservableObject {
     let commentPlaceholder = "Комментарий"
     var deleteButtonTitle: String { direction == .income ? "Удалить доход" : "Удалить расход" }
 
-    init(transaction: Transaction?, direction: Direction, accountId: Int) {
+    init(transaction: Transaction?, direction: Direction, accountId: Int,
+         transactionsService: TransactionsServiceProtocol,
+         categoriesService: CategoriesService,
+         bankAccountsService: BankAccountsService) {
         self.originalTransaction = transaction
         self.isEditing = transaction != nil
         self.direction = direction
         self.accountId = accountId
-
+        self.transactionsService = transactionsService
+        self.categoriesService = categoriesService
+        self.bankAccountsService = bankAccountsService
         if let trx = transaction {
             selectedCategory = trx.category
-            amount = trx.amount.description.replacingOccurrences(of: ".", with: ",")
+            amount = trx.amount.formattedSmart
             selectedDate = trx.transactionDate
             comment = trx.comment ?? ""
         }
-
-        Task { 
-            await loadCategories()
-        }
+        Task { await loadCategories() }
     }
 
     func loadCategories() async {
@@ -96,7 +97,6 @@ final class EditTransactionViewModel: ObservableObject {
                 string: amount.replacingOccurrences(of: Locale.current.decimalSeparator ?? ".", with: ".")
             ) ?? 0
             let amountString = String(format: "%.2f", NSDecimalNumber(decimal: amountValue).doubleValue)
-            // Форматируем дату без миллисекунд
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
             let dateString = isoFormatter.string(from: selectedDate)

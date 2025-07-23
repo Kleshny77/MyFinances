@@ -25,4 +25,30 @@ extension Decimal {
 
         return formatter.string(from: self as NSNumber) ?? "\(self)"
     }
+    func formattedPercent(of total: Decimal) -> String {
+        guard total > 0 else { return "0%" }
+        let percent = (self / total * 100).rounded(2)
+        return "\(percent.formattedSmart)%"
+    }
+    func rounded(_ scale: Int) -> Decimal {
+        var result = Decimal()
+        var value = self
+        NSDecimalRound(&result, &value, scale, .plain)
+        return result
+    }
+}
+
+enum TransactionSortOption { case date, amount }
+
+extension Array where Element == Transaction {
+    var totalAmount: Decimal { reduce(0) { $0 + $1.amount } }
+    func filtered(by direction: Direction) -> [Transaction] {
+        filter { direction == .income ? $0.category.isIncome : !$0.category.isIncome }
+    }
+    func sorted(by option: TransactionSortOption) -> [Transaction] {
+        switch option {
+        case .date: return sorted { $0.transactionDate > $1.transactionDate }
+        case .amount: return sorted { $0.amount > $1.amount }
+        }
+    }
 }

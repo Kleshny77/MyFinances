@@ -17,7 +17,7 @@ enum BackupAction: String, Codable, Sendable {
 @Model
 final class BackupOperation {
     var id: Int
-    var action: String // BackupAction.rawValue
+    var action: String 
     var accountId: Int
     var categoryId: Int?
     var amount: Decimal?

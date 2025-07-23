@@ -39,7 +39,6 @@ final class BankAccountsService {
     func fetchAccount() async throws -> BankAccount? {
         do {
             let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts)! 
-            // Ожидаем массив аккаунтов
             let response: [AccountResponse] = try await networkClient.request(url: url)
             guard let first = response.first else {
                 throw NetworkError.httpError(code: 404, data: Data())
@@ -72,7 +71,6 @@ final class BankAccountsService {
             do { try await backupStorage.removeBackupOperation(id: id) } catch {}
             return updatedAccount
         } catch {
-            // Бэкапим операцию обновления аккаунта
             let backup = BackupOperation(id: id, action: .update, accountId: id)
             do { try await backupStorage.addBackupOperation(backup) } catch {}
             throw error
@@ -80,15 +78,12 @@ final class BankAccountsService {
     }
     
     func updateAccountBalance(accountId: Int, amount: Decimal, isIncome: Bool) async throws {
-        // Можно реализовать как отдельный метод, если нужно
-        // Например, получить аккаунт, изменить баланс, сохранить
         guard var account = try await localStorage.getAccount() else { return }
         let newBalance = isIncome ? (account.balance + amount) : (account.balance - amount)
         account = BankAccount(id: account.id, userId: account.userId, name: account.name, balance: newBalance, currency: account.currency, createdAt: account.createdAt, updatedAt: Date())
         do { try await localStorage.updateAccount(account) } catch {}
     }
     
-    // Получить аккаунт и при необходимости задать имя
     func ensureAccountHasName() async throws -> BankAccount {
         var account = try await fetchAccount()
         if account?.name.isEmpty ?? true {

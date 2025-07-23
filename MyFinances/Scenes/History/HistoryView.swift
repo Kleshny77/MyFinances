@@ -57,7 +57,10 @@ struct HistoryView: View {
                     viewModel: EditTransactionViewModel(
                         transaction: trx,
                         direction: viewModel.direction ?? .outcome,
-                        accountId: viewModel.accountId
+                        accountId: viewModel.accountId,
+                        transactionsService: TransactionsService.create(),
+                        categoriesService: CategoriesService.create(),
+                        bankAccountsService: BankAccountsService.create()
                     )
                 )
             }

@@ -57,11 +57,9 @@ final class NetworkClient {
                 throw NetworkError.invalidResponse
             }
             if httpResponse.statusCode == 204 {
-                // Если ожидается пустой ответ, возвращаем пустой объект
                 if T.self == EmptyResponse.self {
                     return EmptyResponse() as! T
                 }
-                // Если ожидается другой тип, выбрасываем ошибку
                 throw NetworkError.invalidResponse
             }
             if httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 {

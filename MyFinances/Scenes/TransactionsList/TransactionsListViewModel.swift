@@ -44,10 +44,7 @@ final class TransactionsListViewModel: ObservableObject {
         let endStr = DateFormatterFactory.yyyyMMdd.string(from: end)
         let responses = try await service.fetchTransactions(accountId: accountId, startDate: startStr, endDate: endStr)
         let all = responses.map { Transaction.fromAPI($0) }
-        let filtered = all.filter {
-            direction == .income ? $0.category.isIncome : !$0.category.isIncome
-        }
-        transactions = applySort(filtered)
+        transactions = all.filtered(by: direction).sorted(by: sortOption == .date ? .date : .amount)
     }
     
     // MARK: – Helpers

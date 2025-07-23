@@ -432,5 +432,7 @@ struct TransactionsService {
     }
 }
 
+extension TransactionsService: TransactionsServiceProtocol {}
+
 // MARK: - Заглушка для пустого ответа
 struct EmptyResponse: Decodable {}

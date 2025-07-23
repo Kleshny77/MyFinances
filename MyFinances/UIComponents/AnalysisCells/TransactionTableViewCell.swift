@@ -19,7 +19,6 @@ final class TransactionTableViewCell: UITableViewCell {
     required init?(coder: NSCoder) { super.init(coder: coder) }
 
     private func setupUI() {
-        // --- Emoji background ---
         emojiBackgroundView.translatesAutoresizingMaskIntoConstraints = false
         emojiBackgroundView.backgroundColor = UIColor(named: "AccentColor")?.withAlphaComponent(0.2) ?? UIColor(red: 0.439, green: 0.898, blue: 0.545, alpha: 0.2)
         emojiBackgroundView.layer.cornerRadius = CellsConstants.circleSize / 2
