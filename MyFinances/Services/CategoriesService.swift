@@ -24,8 +24,10 @@ final class CategoriesService {
         return CategoriesService(networkClient: networkClient, localStorage: MockCategoriesStorage())
     }
     
+    // MARK: - Асинхронная версия с локальным хранением
     static func createWithLocalStorage() async -> CategoriesService {
         let networkClient = NetworkClient(token: NetworkConstants.authToken)
+        
         do {
             let localStorage = try SwiftDataCategoriesStorage()
             return CategoriesService(networkClient: networkClient, localStorage: localStorage)
@@ -46,7 +48,7 @@ final class CategoriesService {
         }
     }
     
-    func fetchCategories(direction: Direction) async throws -> [Category] {
+    private func fetchFromNetworkByDirection(direction: Direction) async throws -> [Category] {
         let isIncome = direction == .income
         let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.categoriesByType + "/\(isIncome)")!
         

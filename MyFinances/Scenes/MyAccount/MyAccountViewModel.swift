@@ -10,7 +10,7 @@ import SwiftUI
 
 @MainActor
 final class MyAccountViewModel: ObservableObject {
-    private let accountService = BankAccountsService.create()
+    private var accountService: BankAccountsService?
     
     @Published var account: BankAccount? = nil
     @Published var isLoading = false
@@ -39,14 +39,25 @@ final class MyAccountViewModel: ObservableObject {
     init() {
         Task {
             do {
+                try await initializeService()
                 try await loadAccount()
             } catch {
-                // Ошибка при инициализации - аккаунт будет загружен позже
             }
         }
     }
     
+    private func initializeService() async throws {
+        accountService = await BankAccountsService.createWithLocalStorage()
+    }
+    
     func loadAccount() async throws {
+        guard let accountService = accountService else {
+            let fallbackService = BankAccountsService.create()
+            let acc = try await fallbackService.fetchAccount()
+            account = acc
+            return
+        }
+        
         isLoading = true
         defer { isLoading = false }
         
@@ -85,6 +96,7 @@ final class MyAccountViewModel: ObservableObject {
             balance: tempBalance,
             currency: tempCurrency
         )
+        guard let accountService = accountService else { return }
         let updated = try await accountService.updateAccount(id: account.id, request: request)
         self.account = updated
         isEditingMode = false
@@ -95,7 +107,6 @@ final class MyAccountViewModel: ObservableObject {
         do {
             try await loadAccount()
         } catch {
-            // Ошибка при обновлении - пользователь увидит это в UI
         }
     }
     

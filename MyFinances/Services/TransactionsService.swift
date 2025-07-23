@@ -312,7 +312,6 @@ struct TransactionsService {
     
     private func createLocalTransaction(from request: TransactionRequest) async throws -> Transaction {
         let id = Int.random(in: 1000000...9999999)
-        
         let account: BankAccount
         do {
             let accounts = try await getAccountStorage().getAccount()
@@ -431,6 +430,3 @@ struct TransactionsService {
         try await accountService.updateAccountBalance(accountId: accountId, amount: amount, isIncome: isIncome)
     }
 }
-
-// MARK: - Заглушка для пустого ответа
-struct EmptyResponse: Decodable {}

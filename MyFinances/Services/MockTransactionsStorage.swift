@@ -1,3 +1,10 @@
+//
+//  MockTransactionsStorage.swift
+//  MyFinances
+//
+//  Created by Артём on 19.07.2025.
+//
+
 import Foundation
 
 @MainActor

@@ -20,6 +20,7 @@ final class BankAccountsService {
         self.backupStorage = backupStorage
     }
     
+    // MARK: - Фабричный метод для создания сервиса с дефолтным NetworkClient
     static func create() -> BankAccountsService {
         let networkClient = NetworkClient(token: NetworkConstants.authToken)
         return BankAccountsService(networkClient: networkClient, localStorage: MockAccountStorage(), backupStorage: MockBackupStorage())
@@ -58,9 +59,37 @@ final class BankAccountsService {
     }
     
     func createAccount(request: AccountCreateRequest) async throws -> BankAccount {
-        let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts)!
-        let response: AccountResponse = try await networkClient.request(url: url, method: NetworkConstants.Methods.post, body: request)
-        return BankAccount.fromAPI(response)
+        do {
+            let networkAccount = try await createAccountOnNetwork(request: request)
+            
+            do {
+                try await localStorage.saveAccount(networkAccount)
+            } catch {
+            }
+            
+            do {
+                try await backupStorage.removeBackupOperation(id: networkAccount.id)
+            } catch {
+            }
+            
+            return networkAccount
+            
+        } catch {
+            let backupOperation = BackupOperation(
+                id: Int.random(in: 1000000...9999999),
+                action: .create,
+                accountId: 0,
+                categoryId: nil,
+                amount: 0,
+                transactionDate: Date(),
+                comment: "Account creation"
+            )
+            do {
+                try await backupStorage.addBackupOperation(backupOperation)
+            } catch {
+            }
+            throw error
+        }
     }
     
     func updateAccount(id: Int, request: AccountUpdateRequest) async throws -> BankAccount? {
@@ -80,15 +109,12 @@ final class BankAccountsService {
     }
     
     func updateAccountBalance(accountId: Int, amount: Decimal, isIncome: Bool) async throws {
-        // Можно реализовать как отдельный метод, если нужно
-        // Например, получить аккаунт, изменить баланс, сохранить
         guard var account = try await localStorage.getAccount() else { return }
         let newBalance = isIncome ? (account.balance + amount) : (account.balance - amount)
         account = BankAccount(id: account.id, userId: account.userId, name: account.name, balance: newBalance, currency: account.currency, createdAt: account.createdAt, updatedAt: Date())
         do { try await localStorage.updateAccount(account) } catch {}
     }
     
-    // Получить аккаунт и при необходимости задать имя
     func ensureAccountHasName() async throws -> BankAccount {
         var account = try await fetchAccount()
         if account?.name.isEmpty ?? true {
@@ -100,5 +126,86 @@ final class BankAccountsService {
             account = try await updateAccount(id: account?.id ?? 0, request: updateRequest)
         }
         return account ?? BankAccount(id: 0, userId: 0, name: "Основной счёт", balance: 0, currency: "RUB", createdAt: Date(), updatedAt: Date())
+    }
+    
+    // MARK: - Метод для обновления баланса при транзакциях
+    func updateAccountBalance(accountId: Int, amount: Decimal, isIncome: Bool) async throws {
+        let currentAccount = try await fetchAccount()
+        
+        let newBalance: Decimal
+        if isIncome {
+            newBalance = currentAccount.balance + amount
+        } else {
+            newBalance = currentAccount.balance - amount
+        }
+        
+        let updatedAccount = BankAccount(
+            id: currentAccount.id,
+            userId: currentAccount.userId,
+            name: currentAccount.name,
+            balance: newBalance,
+            currency: currentAccount.currency,
+            createdAt: currentAccount.createdAt,
+            updatedAt: Date()
+        )
+        
+        do {
+            try await localStorage.updateAccount(updatedAccount)
+        } catch {
+        }
+    }
+    
+    // MARK: - Приватные методы
+    private func syncBackupOperations() async throws {
+        let backupOperations = try await backupStorage.getAllBackupOperations()
+        
+        for operation in backupOperations {
+            do {
+                switch operation.backupAction {
+                case .create:
+                    continue
+                case .update:
+                    continue
+                case .delete:
+                    try await deleteAccountOnNetwork(id: operation.id)
+                }
+                
+                do {
+                    try await backupStorage.removeBackupOperation(id: operation.id)
+                } catch {
+                }
+                
+            } catch {
+                continue
+            }
+        }
+    }
+    
+    private func fetchFromNetwork() async throws -> BankAccount {
+        let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts)!
+        let accounts: [AccountResponse] = try await networkClient.request(url: url)
+        guard let first = accounts.first else {
+            throw NetworkError.httpError(code: 404, data: Data())
+        }
+        return BankAccount.fromAPI(first)
+    }
+    
+    private func createAccountOnNetwork(request: AccountCreateRequest) async throws -> BankAccount {
+        let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts)!
+        let data = try JSONEncoder().encode(request)
+        let response: AccountResponse = try await networkClient.request(url: url, method: "POST", body: data)
+        return BankAccount.fromAPI(response)
+    }
+    
+    private func updateAccountOnNetwork(id: Int, request: AccountUpdateRequest) async throws -> BankAccount {
+        let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts + "/\(id)")!
+        let data = try JSONEncoder().encode(request)
+        let response: AccountResponse = try await networkClient.request(url: url, method: "PUT", body: data)
+        return BankAccount.fromAPI(response)
+    }
+    
+    private func deleteAccountOnNetwork(id: Int) async throws {
+        let url = URL(string: NetworkConstants.fullBaseURL + NetworkConstants.Endpoints.accounts + "/\(id)")!
+        _ = try await networkClient.request(url: url, method: "DELETE") as EmptyResponse
     }
 }

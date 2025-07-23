@@ -120,3 +120,5 @@ final class NetworkClient {
         }
     }
 }
+
+struct EmptyResponse: Decodable {}
