@@ -11,11 +11,12 @@ struct AnalysisView: UIViewControllerRepresentable {
     let start: Date
     let end: Date
     let accountId: Int
-    
+    let direction: Direction
+
     func makeUIViewController(context: Context) -> AnalysisViewController {
-        return AnalysisViewController(accountId: accountId)
+        return AnalysisViewController(accountId: accountId, direction: direction)
     }
-    
+
     func updateUIViewController(_ uiViewController: AnalysisViewController, context: Context) {
         // Обновление не требуется
     }

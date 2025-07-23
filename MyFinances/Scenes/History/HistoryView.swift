@@ -14,21 +14,15 @@ struct HistoryView: View {
     var currency: String = "RUB"
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    @State private var showAnalysis = false
     
     var body: some View {
-        NavigationView {
-            ZStack {
+        NavigationStack {
+            Group {
                 if viewModel.isLoading {
-                    VStack {
-                        ProgressView("Загрузка истории...")
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(1.2)
-                        Text("Пожалуйста, подождите")
-                            .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
+                    ProgressView("Загрузка истории...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(.systemGroupedBackground))
                 } else {
                     List {
                         datePicker
@@ -40,6 +34,21 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("История")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showAnalysis = true }) {
+                        Image(systemName: "document")
+                    }
+                }
+            }
+            .sheet(isPresented: $showAnalysis) {
+                AnalysisView(
+                    start: viewModel.startDate,
+                    end: viewModel.endDate,
+                    accountId: viewModel.accountId,
+                    direction: viewModel.direction ?? .outcome
+                )
+            }
         }
         .task {
             await loadTransactionsWithErrorHandling()
