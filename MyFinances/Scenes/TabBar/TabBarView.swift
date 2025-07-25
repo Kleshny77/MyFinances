@@ -86,7 +86,3 @@ struct MockView: View {
         Text("Some view")
     }
 }
-
-#Preview {
-    AccountTabContainer()
-}

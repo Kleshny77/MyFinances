@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Charts
 
 extension String {
     var currencySymbol: String {
@@ -163,51 +164,99 @@ struct MyAccountView: View {
     @State private var showingCurrencySheet = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    @State private var dragLocation: CGPoint? = nil
+    @State private var showDetailPopup: Bool = false
+    @State private var longPressActivated: Bool = false
+    @State private var selectedPeriod: ChartPeriod = .monthly
+    private let chartHorizontalPadding: CGFloat = 10
     
+    enum ChartPeriod: String, CaseIterable {
+        case daily = "По дням"
+        case monthly = "По месяцам"
+    }
+    
+    private var loadingView: some View {
+        VStack {
+            ProgressView("Загрузка аккаунта...")
+                .progressViewStyle(CircularProgressViewStyle())
+                .scaleEffect(1.2)
+            Text("Пожалуйста, подождите")
+                .foregroundColor(.secondary)
+                .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private var mainToolbar: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            if !viewModel.isLoading {
+                if viewModel.isEditingMode {
+                    Button("Сохранить") {
+                        Task { await saveChangesWithErrorHandling() }
+                    }
+                } else {
+                    Button("Редактировать") {
+                        viewModel.startEditing()
+                    }
+                }
+            }
+        }
+    }
+
+    private var detailSheet: some View {
+        Group {
+            if let dataPoint = viewModel.selectedDataPoint {
+                VStack(spacing: 16) {
+                    Text("Детали за \(dataPoint.date, style: .date)")
+                        .font(.title2.bold())
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Изменение баланса:")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text("\(dataPoint.type == .income ? "+" : "-")\(dataPoint.amount.formattedSmart) \(viewModel.account?.currency.currencySymbol ?? "₽")")
+                                .font(.title2.bold())
+                                .foregroundColor(dataPoint.type == .income ? .green : .orange)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding()
+            }
+        }
+    }
+
+    private var mainList: some View {
+        List {
+            balance
+            currency
+            if !viewModel.isEditingMode {
+                balanceChart
+            }
+        }
+        .refreshable {
+            await loadAccountWithErrorHandling()
+        }
+    }
+
     var body: some View {
         NavigationView {
             ZStack {
                 if viewModel.isLoading {
-                    VStack {
-                        ProgressView("Загрузка аккаунта...")
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(1.2)
-                        Text("Пожалуйста, подождите")
-                            .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
+                    loadingView
                 } else {
-                    List {
-                        balance
-                        currency
-                    }
-                    .refreshable {
-                        await loadAccountWithErrorHandling()
-                    }
+                    mainList
                 }
             }
             .navigationTitle("Мой счет")
             .listSectionSpacing(16)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if !viewModel.isLoading {
-                        if viewModel.isEditingMode {
-                            Button("Сохранить") {
-                                Task { 
-                                    await saveChangesWithErrorHandling()
-                                }
-                            }
-                            .tint(.supporting)
-                        } else {
-                            Button("Редактировать") {
-                                viewModel.startEditing()
-                            }
-                            .tint(.supporting)
-                        }
-                    }
-                }
+            .toolbar { mainToolbar }
+            .sheet(isPresented: $showDetailPopup, onDismiss: {
+                self.longPressActivated = false
+                viewModel.clearChartSelection()
+            }) {
+                detailSheet
             }
             .onTapGesture {
                 isBalanceFocused = false
@@ -226,6 +275,10 @@ struct MyAccountView: View {
         }
         .task {
             await loadAccountWithErrorHandling()
+            let service = await TransactionsService.createWithLocalStorage()
+            if let accountId = viewModel.account?.id {
+                await viewModel.loadTransactions(service: service, accountId: accountId)
+            }
         }
         .alert("Ошибка", isPresented: $showErrorAlert) {
             Button("Ок", role: .cancel) { }
@@ -249,6 +302,74 @@ struct MyAccountView: View {
         } catch {
             errorMessage = "Ошибка сохранения: \(error.localizedDescription)"
             showErrorAlert = true
+        }
+    }
+    
+    private var balanceChart: some View {
+        Section {
+            VStack(spacing: 16) {
+                Picker("Период", selection: $selectedPeriod) {
+                    ForEach(ChartPeriod.allCases, id: \.self) { period in
+                        Text(period.rawValue).tag(period)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .animation(.easeInOut(duration: 0.3), value: selectedPeriod)
+                
+                let data = selectedPeriod == .monthly ? viewModel.monthlyChartData : viewModel.chartData
+                let labels = getChartLabels(for: data)
+                
+                Chart(data) { point in
+                    BarMark(
+                        x: .value("Дата", point.date),
+                        y: .value("Изменение", (point.amount as NSDecimalNumber).doubleValue)
+                    )
+                    .foregroundStyle(point.type == .income ? Color.green : Color.orange)
+                    .cornerRadius(2)
+                }
+                .chartXAxis {
+                    AxisMarks(values: labels) { value in
+                        if let date = value.as(Date.self) {
+                            AxisValueLabel {
+                                Text(date, format: selectedPeriod == .monthly ? 
+                                     .dateTime.month(.abbreviated) : 
+                                     .dateTime.day().month())
+                                    .font(.caption)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis(.hidden)
+                .chartLegend(.hidden)
+                .frame(height: 200)
+                .padding(.horizontal, chartHorizontalPadding)
+                .chartOverlay { proxy in
+                    ChartInteractionOverlay(
+                        proxy: proxy,
+                        viewModel: viewModel,
+                        dragLocation: $dragLocation,
+                        showDetailPopup: $showDetailPopup,
+                        longPressActivated: $longPressActivated,
+                        chartHorizontalPadding: chartHorizontalPadding
+                    )
+                }
+                .animation(.easeInOut(duration: 0.4), value: data.count)
+            }
+            .padding(.vertical, 8)
+        } header: {
+            Text("История баланса")
+                .font(.headline)
+        }
+    }
+    
+    private func getChartLabels(for data: [ChartDataPoint]) -> [Date] {
+        guard !data.isEmpty else { return [] }
+        let count = data.count
+        if count <= 3 {
+            return data.map { $0.date }
+        } else {
+            let step = count / 3
+            return [data[0].date, data[step].date, data[count - 1].date]
         }
     }
     
