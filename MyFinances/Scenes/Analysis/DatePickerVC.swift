@@ -2,7 +2,7 @@
 //  DatePickerVC.swift
 //  MyFinances
 //
-//  Created by Assistant on 10.07.2025.
+//  Created by Артём on 10.07.2025.
 //
 
 import UIKit

@@ -1,3 +1,10 @@
+//
+//  AnalysisViewModel.swift
+//  MyFinances
+//
+//  Created by Артём on 10.07.2025.
+//
+
 import Foundation
 
 protocol TransactionsServiceProtocol {

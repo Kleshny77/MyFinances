@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Charts
 
 @MainActor
 final class MyAccountViewModel: ObservableObject {
@@ -19,6 +20,9 @@ final class MyAccountViewModel: ObservableObject {
     @Published var tempCurrency: String = ""
     @Published var showCurrencyPicker = false
     @Published var isBalanceHidden = false
+    @Published var transactions: [Transaction] = []
+    
+    @Published var selectedDataPoint: ChartDataPoint? = nil
     
     var totalAmount: String {
         if let account = account {
@@ -106,10 +110,6 @@ final class MyAccountViewModel: ObservableObject {
         Currency(rawValue: tempCurrency)
     }
     
-    var formattedTempBalance: String {
-        tempBalance
-    }
-    
     func isCurrencySelected(_ currency: Currency) -> Bool {
         tempCurrency == currency.rawValue
     }
@@ -120,10 +120,6 @@ final class MyAccountViewModel: ObservableObject {
         }
     }
     
-    var formattedBalance: String {
-        totalAmount
-    }
-    
     var balanceCurrencySymbol: String {
         if let account = account {
             return account.currencySymbol
@@ -131,4 +127,82 @@ final class MyAccountViewModel: ObservableObject {
             return "?"
         }
     }
+    
+    func loadTransactions(service: TransactionsService, accountId: Int) async {
+        let endDate = Date()
+        let startDate = Calendar.current.date(byAdding: .day, value: -29, to: endDate)!
+        let formatter = DateFormatterFactory.yyyyMMdd
+        do {
+            let responses = try await service.fetchTransactions(
+                accountId: accountId,
+                startDate: formatter.string(from: startDate),
+                endDate: formatter.string(from: endDate)
+            )
+            self.transactions = responses.map { Transaction.fromAPI($0) }
+        } catch {
+            self.transactions = []
+        }
+    }
+}
+
+class ChartDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let amount: Decimal
+    let type: BalanceChangeType
+    enum BalanceChangeType: String {
+        case income, expense
+    }
+    init(date: Date, amount: Decimal, type: BalanceChangeType) {
+        self.date = date
+        self.amount = amount
+        self.type = type
+    }
+}
+
+extension MyAccountViewModel {
+    var chartData: [ChartDataPoint] {
+        let endDate = Date()
+        let calendar = Calendar.current
+        var points: [ChartDataPoint] = []
+        
+        for offset in (0..<30).reversed() {
+            let day = calendar.date(byAdding: .day, value: -offset, to: endDate)!
+            let dayTransactions = transactions.filter { calendar.isDate($0.transactionDate, inSameDayAs: day) }
+            
+            let dayChange = dayTransactions.reduce(Decimal(0)) { $0 + ($1.category.isIncome ? $1.amount : -$1.amount) }
+            
+            if dayChange != 0 {
+                let type: ChartDataPoint.BalanceChangeType = dayChange > 0 ? .income : .expense
+                points.append(ChartDataPoint(date: day, amount: abs(dayChange), type: type))
+            }
+        }
+        return points
+    }
+    
+    var monthlyChartData: [ChartDataPoint] {
+        let endDate = Date()
+        let calendar = Calendar.current
+        var points: [ChartDataPoint] = []
+        
+        for offset in (0..<24).reversed() {
+            let month = calendar.date(byAdding: .month, value: -offset, to: endDate)!
+            let monthStart = calendar.dateInterval(of: .month, for: month)!.start
+            let monthEnd = calendar.dateInterval(of: .month, for: month)!.end
+            
+            let monthTransactions = transactions.filter { transaction in
+                transaction.transactionDate >= monthStart && transaction.transactionDate < monthEnd
+            }
+            
+            let monthChange = monthTransactions.reduce(Decimal(0)) { $0 + ($1.category.isIncome ? $1.amount : -$1.amount) }
+            
+            if monthChange != 0 {
+                let type: ChartDataPoint.BalanceChangeType = monthChange > 0 ? .income : .expense
+                points.append(ChartDataPoint(date: monthStart, amount: abs(monthChange), type: type))
+            }
+        }
+        return points
+    }
+    
+    func clearChartSelection() { selectedDataPoint = nil }
 }

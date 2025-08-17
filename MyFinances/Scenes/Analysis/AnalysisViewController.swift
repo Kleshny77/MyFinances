@@ -1,4 +1,12 @@
+//
+//  AnalysisViewController.swift
+//  MyFinances
+//
+//  Created by Артём on 10.07.2025.
+//
+
 import UIKit
+import PieChart
 
 final class AnalysisViewController: UIViewController {
     private var viewModel: AnalysisViewModel?
@@ -36,6 +44,7 @@ final class AnalysisViewController: UIViewController {
         tableView.register(SortCell.self, forCellReuseIdentifier: SortCell.reuseIdentifier)
         tableView.register(SumCell.self, forCellReuseIdentifier: SumCell.reuseIdentifier)
         tableView.register(TransactionTableViewCell.self, forCellReuseIdentifier: TransactionTableViewCell.reuseIdentifier)
+        tableView.register(PieChartTableCell.self, forCellReuseIdentifier: PieChartTableCell.reuseIdentifier)
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -44,13 +53,21 @@ final class AnalysisViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
+    
+    private static func entitiesByCategory(from transactions: [Transaction]) -> [Entity] {
+        let grouped = Dictionary(grouping: transactions, by: { $0.category.name })
+        let sorted = grouped.map { (key, value) in
+            Entity(value: value.reduce(0) { $0 + $1.amount }, label: key)
+        }.sorted { $0.value > $1.value }
+        return sorted
+    }
 }
 
 extension AnalysisViewController: UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int { 2 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         guard let viewModel = viewModel else { return 0 }
-        if section == 0 { return 4 }
+        if section == 0 { return 5 }
         return viewModel.transactions.count
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -84,6 +101,12 @@ extension AnalysisViewController: UITableViewDataSource {
                 cell.configure(sum: viewModel.stringSumAll())
                 cell.selectionStyle = .none
                 return cell
+            case 4:
+                let cell = tableView.dequeueReusableCell(withIdentifier: PieChartTableCell.reuseIdentifier, for: indexPath) as! PieChartTableCell
+                let entities = Self.entitiesByCategory(from: viewModel.transactions)
+                cell.configure(with: entities)
+                cell.selectionStyle = .none
+                return cell
             default:
                 return UITableViewCell()
             }
@@ -101,6 +124,7 @@ extension AnalysisViewController: UITableViewDataSource {
 extension AnalysisViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.section == 1 { return 60 }
+        if indexPath.section == 0 && indexPath.row == 4 { return 280 } 
         return 44
     }
 }
